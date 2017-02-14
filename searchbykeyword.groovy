@@ -41,7 +41,7 @@ executions{
 				def result = [:]
 				result['name'] = currentLayout.module
 				result['version'] = "1.0.0"
-				result['image'] = "/artifactory/content/artworks/default/noImage.jpg"
+				result['image'] = "/artifactory/content/artworks/" + currentLayout.module + "/" + currentLayout.module + ".jpg"
 				
 				results += result
 			
