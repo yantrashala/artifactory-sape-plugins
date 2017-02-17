@@ -18,7 +18,7 @@ executions{
 
 			log.debug(keywords)
 
-			def names = keywords.collect { ['@model.name': ['$match': it+'*']] }
+			def names = keywords.collect { ['@module.name': ['$match': it+'*']] }
 			def query = ['$or': names]
 			def aql = "items.find(${new JsonBuilder(query).toString()})" +
 					".include(\"*\")"
