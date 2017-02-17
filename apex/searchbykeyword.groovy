@@ -7,7 +7,7 @@ import org.artifactory.fs.FileLayoutInfo
 import org.artifactory.repo.RepoPathFactory
 
 executions{
-	searchbykeyword(httpMethod: 'GET'){ params ->
+	searchbykeyword(httpMethod: 'GET', users: 'readers'){ params ->
 
 		try {
 
