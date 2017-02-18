@@ -44,23 +44,19 @@ executions{
 			FileLayoutInfo currentLayout = repositories.getLayoutInfo(rpath)
 			
 			def properties  = repositories.getProperties(rpath)
-			String readMe = ""
-			def set  = properties.get("module.readme")
-			if(set.size()>0){
-					def itre = set.iterator()
-					while(itre.hasNext()){
-						readMe = itre.next()
-					}
-			}
-			details['name'] = properties.get("module.name").getAt(0)
-			details['version'] = properties.get("module.baseVersion").getAt(0)
-			details['image'] = properties.get("module.image").getAt(0)
+			
+			details['name'] = properties.get("module.name").getAt(0) ?: "N/A"
+			details['version'] = properties.get("module.baseVersion").getAt(0) ?: "N/A"
+			details['image'] = properties.get("module.image").getAt(0) ?: "N/A"
 			details['publisher'] = aqlresult.getModifiedBy()
 			details['lastModifiedOn'] = aqlresult.created.getTime()
 			details['license'] = "BSD"
 			details['scm'] = "tools.publicis.sapient.com/bitbucket-code-commons/"
 			details['collaborators'] = ""
-			details['readme'] = readMe
+			details['readme'] =  properties.get("module.readme").getAt(0) ?: "N/A"
+			details['gatekeepers'] = properties.get("module.gatekeepers").getAt(0) ?: "N/A"
+			details['keywords']= properties.get("module.keywords").getAt(0) ?: "N/A"
+			details['team']= properties.get("module.team").getAt(0) ?: "N/A"
 			
 			
 			json['details'] = details;
