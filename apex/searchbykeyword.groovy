@@ -18,7 +18,7 @@ executions{
 
 			log.debug(keywords)
 
-			def names = keywords.collect { ['@model.name': ['$match': it+'*']] }
+			def names = keywords.collect { ['@module.name': ['$match': '*'+it+'*'], '@module.keywords': ['$match': '*'+it+'*'], '@module.team': ['$match': '*'+it+'*']]}
 			def query = ['$or': names]
 			def aql = "items.find(${new JsonBuilder(query).toString()})" +
 					".include(\"*\")"
@@ -27,24 +27,25 @@ executions{
 			log.debug(aql.toString())
 
 			def results = [];
-			
 			def json = [:]
 			
-				
 			queryresults.each { aqlresult ->
 				
 				path = "$aqlresult.path/$aqlresult.name"
 				rpath = RepoPathFactory.create(aqlresult.repo, path)
-				item = repositories.getFileInfo(rpath)
-				FileLayoutInfo currentLayout = repositories.getLayoutInfo(rpath)
-				
+				//item = repositories.getFileInfo(rpath)
+				//FileLayoutInfo currentLayout = repositories.getLayoutInfo(rpath)
+				//def name = ""
+				//if (currentLayout.isValid()) name = currentLayout.module
+                //else name = (item.name =~ '^(?:\\D[^.]*\\.)+')[0] - ~'\\.$'
+                def properties  = repositories.getProperties(rpath)
+                
 				def result = [:]
-				result['name'] = currentLayout.module
-				result['version'] = "1.0.0"
-				result['image'] = "/artifactory/content/artworks/" + currentLayout.module + "/" + currentLayout.module + ".jpg"
+				result['name'] = properties.get("module.name").getAt(0)
+				result['version'] = properties.get("module.baseRevision").getAt(0)
+				result['image'] = properties.get("module.image").getAt(0)
 				
 				results += result
-			
 			}
 			
 			json['results'] = results;

@@ -11,23 +11,28 @@ executions{
 	moduledetails(httpMethod: 'GET'){ params ->
 
 		try {
-
+			log.info("reached here")
 			def module = params?.get('module').get(0)
 
 			def aqlserv = ctx.beanForType(AqlService)
 
 			
-			def query = ['@model.name': module]
+			def query = ['@module.name': module]
 			def aql = "items.find(${new JsonBuilder(query).toString()})" +
 					".include(\"*\")"
 
 			def queryresults = aqlserv.executeQueryEager(aql).results
 			log.debug(aql.toString())
 
-			def details = [:];
-			
+			def details = [:]
 			def json = [:]
 			
+			log.info("result set size  "+queryresults.size())
+			def itr = queryresults.iterator()
+			while(itr.hasNext()){
+				def itm = itr.next()
+				log.info("item path : "+itm.path)
+			}
 			AqlBaseFullRowImpl aqlresult = queryresults.get(0)
 				
 			log.debug(aqlresult.toString())
@@ -35,17 +40,27 @@ executions{
 			path = "$aqlresult.path/$aqlresult.name"
 			rpath = RepoPathFactory.create(aqlresult.repo, path)
 			item = repositories.getFileInfo(rpath)
+			
 			FileLayoutInfo currentLayout = repositories.getLayoutInfo(rpath)
 			
-			details['name'] = currentLayout.module
-			details['version'] = currentLayout.baseRevision
-			details['image'] = "/artifactory/content/artworks/" + currentLayout.module + "/" + currentLayout.module + ".jpg"
-			details['publisher'] = aqlresult.getModifiedBy()		
+			def properties  = repositories.getProperties(rpath)
+			String readMe = ""
+			def set  = properties.get("module.readme")
+			if(set.size()>0){
+					def itre = set.iterator()
+					while(itre.hasNext()){
+						readMe = itre.next()
+					}
+			}
+			details['name'] = properties.get("module.name").getAt(0)
+			details['version'] = properties.get("module.baseVersion").getAt(0)
+			details['image'] = properties.get("module.image").getAt(0)
+			details['publisher'] = aqlresult.getModifiedBy()
 			details['lastModifiedOn'] = aqlresult.created.getTime()
 			details['license'] = "BSD"
 			details['scm'] = "tools.publicis.sapient.com/bitbucket-code-commons/"
 			details['collaborators'] = ""
-			details['readme'] = ""
+			details['readme'] = readMe
 			
 			
 			json['details'] = details;
@@ -61,6 +76,5 @@ executions{
 
 	}
 }
-
 
 
