@@ -55,17 +55,16 @@ storage {
 					ArchiveEntry archiveEntry;
 					while ((archiveEntry = archiveInputStream.getNextEntry()) != null) {
 						log.info('----------------'+archiveEntry.name)
-						if(archiveEntry.name.equalsIgnoreCase("readme.md")) {
+						//if(archiveEntry.name.equalsIgnoreCase("readme.md")) {
+						if(archiveEntry.name.toLowerCase().contains("readme.md")){
 							log.info("Inside Readme condition :: "+archiveEntry.name)
 							def downloadPath = item.repoKey + "/" + item.repoPath.path + "!" + "/" + archiveEntry.name
 							repositories.setProperty(item.repoPath, PROPERTY_PREFIX + "readme", downloadPath as String)
 						}
-						
-						if(archiveEntry.name.equalsIgnoreCase("apex.json")) {
+						else if(archiveEntry.name.equalsIgnoreCase("apex.json")) {
 							log.info("Inside Apex condition :: "+archiveEntry.name)
 							def downloadPath = item.repoKey + "/" + item.repoPath.path + "!" + "/" + archiveEntry.name
 							repositories.setProperty(item.repoPath, PROPERTY_PREFIX + "apex", downloadPath as String)
-							
 							
 							// Adding properties from apex.json file
 							def str = repoService.getGenericArchiveFileContent(repoPath, archiveEntry.name).getContent()
@@ -78,7 +77,6 @@ storage {
 							list.each { 
 								repositories.setProperty(item.repoPath, PROPERTY_PREFIX + it.key, it.value as String)
 							}
-							
 						}
 					}
 				} catch (IOException e) {

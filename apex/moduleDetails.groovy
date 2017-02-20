@@ -15,12 +15,14 @@ executions{
 			def aqlserv = ctx.beanForType(AqlService)
 
 			// AQL query to get the module details
-			def query = ['@module.name': module]
+			//def query = ['@module.name': module]
+			def names = module.collect { ['@module.name': ['$match': module], '@npm.name': ['$match': module]]}
+			def query = ['$or': names]
 			def aql = "items.find(${new JsonBuilder(query).toString()})" +
 					".include(\"*\")"
 
 			def queryresults = aqlserv.executeQueryEager(aql).results
-			log.debug(aql.toString())
+			log.info(aql.toString())
 
 			log.info("result set size  "+queryresults.size())
 			def itr = queryresults.iterator()
@@ -39,8 +41,8 @@ executions{
 			// Getting the properties for the required module name
 			def properties  = repositories.getProperties(rpath)
 			def details = [:]
-			details['name'] = properties.get("module.name").getAt(0) ?: "N/A"
-			details['version'] = properties.get("module.baseRevision").getAt(0) ?: "N/A"
+			details['name'] = properties.get("npm.name").getAt(0) ?: properties.get("module.name").getAt(0) ?: "N/A"
+			details['version'] = properties.get("npm.version").getAt(0) ?: properties.get("module.baseRevision").getAt(0) ?: "N/A"
 			details['image'] = properties.get("module.image").getAt(0) ?: "N/A"
 			details['publisher'] = aqlresult.getModifiedBy()
 			details['lastModifiedOn'] = aqlresult.created.getTime()

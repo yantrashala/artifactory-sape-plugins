@@ -3,7 +3,6 @@ import groovy.json.JsonSlurper
 import org.artifactory.aql.AqlService
 import org.artifactory.aql.result.AqlEagerResult
 import org.artifactory.aql.result.rows.AqlRowResult
-import org.artifactory.fs.FileLayoutInfo
 import org.artifactory.repo.RepoPathFactory
 
 executions{
@@ -42,8 +41,9 @@ executions{
 					result['version'] = properties.get("module.baseRevision").getAt(0)
 				if(repositories.hasProperty(rpath, "module.image"))
 					result['image'] = properties.get("module.image").getAt(0)*/
-				result['name'] = properties.get("module.name").getAt(0) ?: "N/A"
-				result['version'] = properties.get("module.baseRevision").getAt(0) ?: "N/A"
+				
+				result['name'] = properties.get("npm.name").getAt(0) ?: properties.get("module.name").getAt(0) ?: "N/A"
+				result['version'] = properties.get("npm.version").getAt(0) ?: properties.get("module.baseRevision").getAt(0) ?: "N/A"
 				result['image'] = properties.get("module.image").getAt(0) ?: "N/A"
 				
 				results += result
