@@ -29,7 +29,7 @@ import groovy.transform.Field
 @Field final String PROPERTY_PREFIX = 'layout.'
 @Field final String PERMS_TARGET_PREFIX = 'appx_'
 
-executions {
+storage {
 	afterCreate { ItemInfo item ->
 		/*
 		 * 
