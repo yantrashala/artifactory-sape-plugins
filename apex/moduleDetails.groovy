@@ -1,5 +1,4 @@
 import groovy.json.JsonBuilder
-import groovy.json.JsonSlurper
 import org.artifactory.aql.AqlService
 import org.artifactory.aql.result.AqlEagerResult
 import org.artifactory.aql.result.rows.AqlBaseFullRowImpl
@@ -11,12 +10,11 @@ executions{
 	moduledetails(httpMethod: 'GET'){ params ->
 
 		try {
-			log.info("reached here")
+			// getting keyword as url parameters
 			def module = params?.get('module').get(0)
-
 			def aqlserv = ctx.beanForType(AqlService)
 
-			
+			// AQL query to get the module details
 			def query = ['@module.name': module]
 			def aql = "items.find(${new JsonBuilder(query).toString()})" +
 					".include(\"*\")"
@@ -24,9 +22,6 @@ executions{
 			def queryresults = aqlserv.executeQueryEager(aql).results
 			log.debug(aql.toString())
 
-			def details = [:]
-			def json = [:]
-			
 			log.info("result set size  "+queryresults.size())
 			def itr = queryresults.iterator()
 			while(itr.hasNext()){
@@ -34,19 +29,18 @@ executions{
 				log.info("item path : "+itm.path)
 			}
 			AqlBaseFullRowImpl aqlresult = queryresults.get(0)
-				
-			log.debug(aqlresult.toString())
-				
+					
 			path = "$aqlresult.path/$aqlresult.name"
 			rpath = RepoPathFactory.create(aqlresult.repo, path)
-			item = repositories.getFileInfo(rpath)
+			//item = repositories.getFileInfo(rpath)
 			
 			FileLayoutInfo currentLayout = repositories.getLayoutInfo(rpath)
 			
+			// Getting the properties for the required module name
 			def properties  = repositories.getProperties(rpath)
-			
+			def details = [:]
 			details['name'] = properties.get("module.name").getAt(0) ?: "N/A"
-			details['version'] = properties.get("module.baseVersion").getAt(0) ?: "N/A"
+			details['version'] = properties.get("module.baseRevision").getAt(0) ?: "N/A"
 			details['image'] = properties.get("module.image").getAt(0) ?: "N/A"
 			details['publisher'] = aqlresult.getModifiedBy()
 			details['lastModifiedOn'] = aqlresult.created.getTime()
@@ -59,6 +53,7 @@ executions{
 			details['team']= properties.get("module.team").getAt(0) ?: "N/A"
 			
 			
+			def json = [:]
 			json['details'] = details;
 
 			message = new JsonBuilder(json).toPrettyString()

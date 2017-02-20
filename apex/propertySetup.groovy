@@ -37,12 +37,13 @@ storage {
 			ZipUtils.isTgzFamilyArchive(filePath) || ZipUtils.isGzCompress(filePath)) {
 
 				try  {
+					// Setting the properties for the default token
 					def id = ""
-					['organization', 'module', 'baseRevision', 'ext', 'image'].each { String propName ->
-	                	if(propName.equals("module")){
+					['organization', 'name', 'baseRevision', 'ext', 'image'].each { String propName ->
+	                	if(propName.equals("name")){
 	                		if (currentLayout.isValid()) id = currentLayout.module
 	                		else id = (item.name =~ '^(?:\\D[^.]*\\.)+')[0] - ~'\\.$'
-	                		repositories.setProperty(repoPath, PROPERTY_PREFIX + "name", id as String)
+	                		repositories.setProperty(repoPath, PROPERTY_PREFIX + propName, id as String)
 	                	}
 	                	else if(propName.equals("image")) 
 	                		repositories.setProperty(repoPath, PROPERTY_PREFIX + propName, "/artifactory/content/artworks/" + id + "/" + id + ".jpg" as String)	
@@ -55,15 +56,18 @@ storage {
 					while ((archiveEntry = archiveInputStream.getNextEntry()) != null) {
 						log.info('----------------'+archiveEntry.name)
 						if(archiveEntry.name.equalsIgnoreCase("readme.md")) {
+							log.info("Inside Readme condition :: "+archiveEntry.name)
 							def downloadPath = item.repoKey + "/" + item.repoPath.path + "!" + "/" + archiveEntry.name
 							repositories.setProperty(item.repoPath, PROPERTY_PREFIX + "readme", downloadPath as String)
 						}
-
+						
 						if(archiveEntry.name.equalsIgnoreCase("apex.json")) {
-							log.info("archiveEntry === ,archiveEntry       "+archiveEntry.name)
+							log.info("Inside Apex condition :: "+archiveEntry.name)
 							def downloadPath = item.repoKey + "/" + item.repoPath.path + "!" + "/" + archiveEntry.name
 							repositories.setProperty(item.repoPath, PROPERTY_PREFIX + "apex", downloadPath as String)
 							
+							
+							// Adding properties from apex.json file
 							def str = repoService.getGenericArchiveFileContent(repoPath, archiveEntry.name).getContent()
 							def json = new JsonSlurper().parse(str.toCharArray())
 							

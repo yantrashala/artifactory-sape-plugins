@@ -10,14 +10,14 @@ executions{
 	searchbykeyword(httpMethod: 'GET', users: 'readers'){ params ->
 
 		try {
-
+			// getting keyword and category as url parameters
 			def keywords = params?.get('keyword')
 			def categories = params?.get('category')
 
 			def aqlserv = ctx.beanForType(AqlService)
-
 			log.debug(keywords)
 
+			// AQL query to match the keywords
 			def names = keywords.collect { ['@module.name': ['$match': '*'+it+'*'], '@module.keywords': ['$match': '*'+it+'*'], '@module.team': ['$match': '*'+it+'*']]}
 			def query = ['$or': names]
 			def aql = "items.find(${new JsonBuilder(query).toString()})" +
@@ -27,29 +27,31 @@ executions{
 			log.debug(aql.toString())
 
 			def results = [];
-			def json = [:]
 			
 			queryresults.each { aqlresult ->
 				
 				path = "$aqlresult.path/$aqlresult.name"
 				rpath = RepoPathFactory.create(aqlresult.repo, path)
-				//item = repositories.getFileInfo(rpath)
-				//FileLayoutInfo currentLayout = repositories.getLayoutInfo(rpath)
-				//def name = ""
-				//if (currentLayout.isValid()) name = currentLayout.module
-                //else name = (item.name =~ '^(?:\\D[^.]*\\.)+')[0] - ~'\\.$'
                 def properties  = repositories.getProperties(rpath)
                 
+				//creating the result JSON while checking whether the property is available or not
 				def result = [:]
-				result['name'] = properties.get("module.name").getAt(0)
-				result['version'] = properties.get("module.baseRevision").getAt(0)
-				result['image'] = properties.get("module.image").getAt(0)
+				/*if(repositories.hasProperty(rpath, "module.name"))
+					result['name'] = properties.get("module.name").getAt(0)
+				if(repositories.hasProperty(rpath, "module.baseRevision"))
+					result['version'] = properties.get("module.baseRevision").getAt(0)
+				if(repositories.hasProperty(rpath, "module.image"))
+					result['image'] = properties.get("module.image").getAt(0)*/
+				result['name'] = properties.get("module.name").getAt(0) ?: "N/A"
+				result['version'] = properties.get("module.baseRevision").getAt(0) ?: "N/A"
+				result['image'] = properties.get("module.image").getAt(0) ?: "N/A"
 				
 				results += result
 			}
 			
+			def json = [:]
 			json['results'] = results;
-
+			// Creating the JSON Builder
 			message = new JsonBuilder(json).toPrettyString()
 			status = 200
 
