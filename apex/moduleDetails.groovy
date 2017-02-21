@@ -46,7 +46,7 @@ executions{
 			details['image'] = properties.get("module.image").getAt(0) ?: "N/A"
 			details['publisher'] = aqlresult.getModifiedBy()
 			details['lastModifiedOn'] = aqlresult.created.getTime()
-			details['license'] = "BSD"
+			details['license'] = properties.get("artifactory.licenses").getAt(0) ?: "N/A"
 			details['scm'] = "tools.publicis.sapient.com/bitbucket-code-commons/"
 			details['collaborators'] = ""
 			details['readme'] =  properties.get("module.readme").getAt(0) ?: "N/A"
