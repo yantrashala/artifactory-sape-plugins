@@ -10,20 +10,20 @@ executions{
 
 		try {
 			// getting keyword and category as url parameters
-			def keywords = params?.get('keyword')
+			def keywords = params?.get('keyword').get(0)
 			def categories = params?.get('category')
 
 			def aqlserv = ctx.beanForType(AqlService)
-			log.debug(keywords)
+			log.info(keywords)
 
 			// AQL query to match the keywords
-			def names = keywords.collect { ['@module.name': ['$match': '*'+it+'*'], '@module.keywords': ['$match': '*'+it+'*'], '@module.team': ['$match': '*'+it+'*']]}
+			def names = keywords.collect { ['@module.name': ['$match': '*'+keywords+'*'], '@module.keywords': ['$match': '*'+keywords+'*'], '@module.team': ['$match': '*'+keywords+'*']]}
 			def query = ['$or': names]
 			def aql = "items.find(${new JsonBuilder(query).toString()})" +
 					".include(\"*\")"
 
 			def queryresults = aqlserv.executeQueryEager(aql).results
-			log.debug(aql.toString())
+			log.info(aql.toString())
 
 			def results = [];
 			
