@@ -7,7 +7,7 @@ import org.artifactory.fs.FileLayoutInfo
 import org.artifactory.repo.RepoPathFactory
 
 executions{
-	moduledetails(httpMethod: 'GET', users: 'readers'){ params ->
+	moduledetails(httpMethod: 'GET', groups : 'readers'){ params ->
 
 		try {
 			// getting keyword as url parameters
