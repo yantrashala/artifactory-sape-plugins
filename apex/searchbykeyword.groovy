@@ -42,7 +42,7 @@ executions{
 				if(repositories.hasProperty(rpath, "module.image"))
 					result['image'] = properties.get("module.image").getAt(0)*/
 				
-				result['name'] = properties.get("npm.name").getAt(0) ?: properties.get("module.name").getAt(0) ?: "N/A"
+				result['name'] = properties.get("module.name").getAt(0) ?: "N/A"
 				result['version'] = properties.get("npm.version").getAt(0) ?: properties.get("module.baseRevision").getAt(0) ?: "N/A"
 				result['image'] = properties.get("module.image").getAt(0) ?: "N/A"
 				
