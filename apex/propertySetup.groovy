@@ -42,7 +42,7 @@ storage {
 					['organization', 'name', 'baseRevision', 'ext', 'image'].each { String propName ->
 	                	if(propName.equals("name")){
 	                		if (currentLayout.isValid()) id = currentLayout.module
-	                		else id = (item.name =~ '^(?:\\D[^.]*\\.)+')[0] - ~'\\.$'
+	                		else id = (item.name =~ '^(?:\\D[^.]*\\-)+')[0] - ~'\\-$' 
 	                		repositories.setProperty(repoPath, PROPERTY_PREFIX + propName, id as String)
 	                	}
 	                	else if(propName.equals("image")) 
