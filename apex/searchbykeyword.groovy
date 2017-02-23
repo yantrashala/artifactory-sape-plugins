@@ -26,7 +26,7 @@ executions{
 			log.info(aql.toString())
 
 			def results = [];
-			
+			def result = [:]
 			queryresults.each { aqlresult ->
 				
 				path = "$aqlresult.path/$aqlresult.name"
@@ -34,7 +34,7 @@ executions{
                 def properties  = repositories.getProperties(rpath)
                 
 				//creating the result JSON while checking whether the property is available or not
-				def result = [:]
+				
 				/*if(repositories.hasProperty(rpath, "module.name"))
 					result['name'] = properties.get("module.name").getAt(0)
 				if(repositories.hasProperty(rpath, "module.baseRevision"))
@@ -42,11 +42,15 @@ executions{
 				if(repositories.hasProperty(rpath, "module.image"))
 					result['image'] = properties.get("module.image").getAt(0)*/
 				
-				result['name'] = properties.get("module.name").getAt(0) ?: "N/A"
-				result['version'] = properties.get("npm.version").getAt(0) ?: properties.get("module.baseRevision").getAt(0) ?: "N/A"
-				result['image'] = properties.get("module.image").getAt(0) ?: "N/A"
-				
-				results += result
+				if(!result.containsValue(properties.get("module.name").getAt(0)) ){
+					result = new HashMap()
+					result['name'] = properties.get("module.name").getAt(0) ?: "N/A"
+					result['version'] = properties.get("npm.version").getAt(0) ?: properties.get("module.baseRevision").getAt(0) ?: "N/A"
+					result['image'] = properties.get("module.image").getAt(0) ?: "N/A"
+					results += result
+				}else{
+					result['version'] = properties.get("npm.version").getAt(0) ?: properties.get("module.baseRevision").getAt(0) ?: "N/A"
+				}
 			}
 			
 			def json = [:]
