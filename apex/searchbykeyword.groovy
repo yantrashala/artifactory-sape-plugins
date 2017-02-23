@@ -6,7 +6,7 @@ import org.artifactory.aql.result.rows.AqlRowResult
 import org.artifactory.repo.RepoPathFactory
 
 executions{
-	searchbykeyword(httpMethod: 'GET', groups : 'readers'){ params ->
+	searchbykeyword(httpMethod: 'GET', groups : 'users'){ params ->
 
 		try {
 			// getting keyword and category as url parameters
