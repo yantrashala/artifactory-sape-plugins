@@ -45,7 +45,6 @@ executions{
 				
 				// Getting the properties for the required module name
 				def properties  = repositories.getProperties(rpath)
-				def details = [:]
 				details['name'] = properties.get("npm.name").getAt(0) ?: properties.get("module.name").getAt(0) ?: "N/A"
 				details['version'] = properties.get("npm.version").getAt(0) ?: properties.get("module.baseRevision").getAt(0) ?: "N/A"
 				details['image'] = properties.get("module.image").getAt(0) ?: "N/A"
