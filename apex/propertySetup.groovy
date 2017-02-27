@@ -61,7 +61,7 @@ storage {
 							def downloadPath = item.repoKey + "/" + item.repoPath.path + "!" + "/" + archiveEntry.name
 							repositories.setProperty(item.repoPath, PROPERTY_PREFIX + "readme", downloadPath as String)
 						}
-						else if(archiveEntry.name.equalsIgnoreCase("apex.json")) {
+						else if(archiveEntry.name.toLowerCase().contains("apex.json")) {
 							log.info("Inside Apex condition :: "+archiveEntry.name)
 							def downloadPath = item.repoKey + "/" + item.repoPath.path + "!" + "/" + archiveEntry.name
 							repositories.setProperty(item.repoPath, PROPERTY_PREFIX + "apex", downloadPath as String)
