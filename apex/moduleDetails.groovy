@@ -81,7 +81,7 @@ executions{
 			status = 200
 		} catch (e) {
 			log.error 'Failed to execute plugin', e
-			message = e.message
+			message = 'Failed to execute plugin'
 			status = 500
 		}
 	}
