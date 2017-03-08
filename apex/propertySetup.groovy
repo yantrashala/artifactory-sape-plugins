@@ -52,7 +52,7 @@ storage {
 	                	}
 	                	else if(propName.equals(IMAGE)) {
 	                		repositories.setProperty(repoPath, PROPERTY_PREFIX + propName, "/artifactory/content/artworks/" + id + "/" + id + ".jpg" as String)
-	                	}	
+	                	}
 	                	else
 	                		repositories.setProperty(repoPath, PROPERTY_PREFIX + propName, currentLayout."$propName" as String)
 	                } // This pulls all the default tokens

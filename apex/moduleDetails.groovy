@@ -14,8 +14,8 @@ executions{
 
 		try {
 			// getting keyword as url parameters
-			def module = params?.get('module').getAt(0)
-			def version =   params?.get('module').getAt(1) ?: "*"
+			def module = params['module'] ? params['module'][0] as String : "--NA--"
+			def version = params['version'] ? params['version'][0] as String : '*'
 			def aqlserv = ctx.beanForType(AqlService)
 
 			// AQL query to get the module details
@@ -55,7 +55,8 @@ executions{
 				def names1 = module.collect { ['@module.name': ['$match': module], '@npm.name': ['$match': module]]}
 				def query1 = ['$or': names1]
 				def aql1 = "items.find(${new JsonBuilder(query1).toString()})" +
-						".include(\"*\")"
+						".include(\"*\")" +
+						".sort({\"\$desc\" : [\"created\"]})"
 				def queryresults1 = aqlserv.executeQueryEager(aql1).results
 				log.info("result set size  "+queryresults1.size())
 				

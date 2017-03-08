@@ -10,8 +10,8 @@ executions{
 
 		try {
 			// getting keyword and category as url parameters
-			def keywords = params?.get('keyword').get(0)
-			def categories = params?.get('category')
+			def keywords = params['keyword'] ? params['keyword'][0] as String : "--NA--"
+			def categories = params['category'] ? params['category'][0] as String : "--NA--"
 
 			def aqlserv = ctx.beanForType(AqlService)
 			log.info(keywords)
