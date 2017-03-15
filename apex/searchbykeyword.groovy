@@ -11,13 +11,12 @@ executions{
 		try {
 			// getting keyword and category as url parameters
 			def keywords = params['keyword'] ? params['keyword'][0] as String : "--NA--"
-			def categories = params['category'] ? params['category'][0] as String : "--NA--"
-
+			
 			def aqlserv = ctx.beanForType(AqlService)
 			log.info(keywords)
 
 			// AQL query to match the keywords
-			def names = keywords.collect { ['@module.name': ['$match': '*'+keywords+'*'], '@module.keywords': ['$match': '*'+keywords+'*'], '@module.team': ['$match': '*'+keywords+'*']]}
+			def names = keywords.collect { ['@module.name': ['$match': '*'+keywords.toLowerCase()+'*'], '@module.keywords': ['$match': '*'+keywords.toLowerCase()+'*'], '@module.team': ['$match': '*'+keywords.toLowerCase()+'*']]}
 			def query = ['$or': names]
 			def aql = "items.find(${new JsonBuilder(query).toString()})" +
 					".include(\"*\")"
@@ -31,8 +30,8 @@ executions{
 				
 				path = "$aqlresult.path/$aqlresult.name"
 				rpath = RepoPathFactory.create(aqlresult.repo, path)
-                def properties  = repositories.getProperties(rpath)
-                
+				def properties  = repositories.getProperties(rpath)
+				
 				//creating the result JSON while checking whether the property is available or not
 				
 				/*if(repositories.hasProperty(rpath, "module.name"))
@@ -61,12 +60,9 @@ executions{
 
 		} catch (e) {
 			log.error 'Failed to execute plugin', e
-			message = e.message
+			message = 'Failed to execute plugin'
 			status = 500
 		}
 
 	}
 }
-
-
-

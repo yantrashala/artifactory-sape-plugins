@@ -25,8 +25,11 @@ import groovy.transform.Field
 @Field final String PROPERTY_PREFIX = 'module.'
 @Field final String NAME = 'name'
 @Field final String IMAGE = 'image'
+@Field final String BASEREVISION = 'baseRevision'
 @Field final String README = 'readme.md'
-@Field final String APEX = 'apex.json'
+@Field final String APEX = 'appx.json'
+@Field final String DISTRIBUTION = 'distribution'
+@Field final String TYPE = 'type'
 
 storage {
 	afterCreate { ItemInfo item ->
@@ -41,18 +44,30 @@ storage {
 			ZipUtils.isTgzFamilyArchive(filePath) || ZipUtils.isGzCompress(filePath)) {
 
 				try  {
-
+					def properties  = repositories.getProperties(repoPath)
+					
 					// Setting the properties for the default tokens
 					def id = ""
 					['organization', 'name', 'baseRevision', 'ext', 'image'].each { String propName ->
-	                	if(propName.equals(NAME)){
+						if(propName.equals(NAME)){
 	                		if (currentLayout.isValid()) id = currentLayout.module
 	                		else id = (item.name =~ '^(?:\\D[^.]*\\-)')[0] - ~'\\-$'
 	                		repositories.setProperty(repoPath, PROPERTY_PREFIX + propName, id as String)
 	                	}
 	                	else if(propName.equals(IMAGE)) {
-	                		repositories.setProperty(repoPath, PROPERTY_PREFIX + propName, "/artifactory/content/artworks/" + id + "/" + id + ".jpg" as String)
-	                	}
+	                		repositories.setProperty(repoPath, PROPERTY_PREFIX + propName, "/artifactory/assets/images/" + id + "/" + id + ".jpg" as String)
+	                	}	
+						/*else if(propName.equals(BASEREVISION)) {
+	                		if(item.name.endsWith('zip')){
+								def name = item.name?.split('-')
+								def val = name.size()
+	                			def tokens = name[val-1]?.split('\\.') as List ?: []
+	                			def ver = tokens[0]+'.'+tokens[1]+'.'+tokens[2]
+	                			repositories.setProperty(repoPath, PROPERTY_PREFIX + propName, ver as String)
+	                		} else {
+	                			repositories.setProperty(repoPath, PROPERTY_PREFIX + propName, currentLayout."$propName" as String)
+	                		}
+	                	}*/
 	                	else
 	                		repositories.setProperty(repoPath, PROPERTY_PREFIX + propName, currentLayout."$propName" as String)
 	                } // This pulls all the default tokens
@@ -65,7 +80,6 @@ storage {
 					def apexLength = 0
 					while ((archiveEntry = archiveInputStream.getNextEntry()) != null) {
 						log.info('----------------'+archiveEntry.name)
-						//if(archiveEntry.name.equalsIgnoreCase("readme.md")) {
 						if(archiveEntry.name.toLowerCase().endsWith(README)){
 							if(readmeLength == 0 || readmeLength > archiveEntry.name.length()) {
 								readmeLength = archiveEntry.name.length()
@@ -79,7 +93,7 @@ storage {
 								apexLength = archiveEntry.name.length()
 								log.info("Inside Apex condition :: "+archiveEntry.name)
 								def downloadPath = item.repoKey + "/" + item.repoPath.path + "!" + "/" + archiveEntry.name
-								repositories.setProperty(item.repoPath, PROPERTY_PREFIX + "apex", downloadPath as String)
+								repositories.setProperty(item.repoPath, PROPERTY_PREFIX + "appx", downloadPath as String)
 								
 								// Adding properties from apex.json file
 								def str = repoService.getGenericArchiveFileContent(repoPath, archiveEntry.name).getContent()
@@ -90,7 +104,14 @@ storage {
 	
 								// Print them out to make sure
 								list.each { 
-									repositories.setProperty(item.repoPath, PROPERTY_PREFIX + it.key, it.value as String)
+									if(it.key.equalsIgnoreCase(DISTRIBUTION)){
+										if(it.value.equalsIgnoreCase("false")){
+											repositories.setProperty(item.repoPath, PROPERTY_PREFIX + TYPE, "artifact" as String)
+										} else {
+											repositories.setProperty(item.repoPath, PROPERTY_PREFIX + TYPE, "distribution" as String)
+										}
+									} else 
+										repositories.setProperty(item.repoPath, PROPERTY_PREFIX + it.key, it.value.toLowerCase() as String)
 								}
 							}
 						}

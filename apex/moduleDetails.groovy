@@ -50,6 +50,7 @@ executions{
 				details['gatekeepers'] = properties.get("module.gatekeepers").getAt(0) ?: "N/A"
 				details['keywords']= properties.get("module.keywords").getAt(0) ?: "N/A"
 				details['team']= properties.get("module.team").getAt(0) ?: "N/A"
+				details['type']= properties.get("module.type").getAt(0) ?: "N/A"
 				
 				// To get the version history for the given module, so firing a query to get all the versions
 				def names1 = module.collect { ['@module.name': ['$match': module], '@npm.name': ['$match': module]]}
@@ -82,7 +83,7 @@ executions{
 			status = 200
 		} catch (e) {
 			log.error 'Failed to execute plugin', e
-			message = e.message
+			message = 'Failed to execute plugin'
 			status = 500
 		}
 	}
