@@ -104,12 +104,15 @@ storage {
 	
 								// Print them out to make sure
 								list.each { 
-									if(it.key.equalsIgnoreCase(DISTRIBUTION)){
-										if(it.value.equalsIgnoreCase("false")){
-											repositories.setProperty(item.repoPath, PROPERTY_PREFIX + TYPE, "artifact" as String)
-										} else {
-											repositories.setProperty(item.repoPath, PROPERTY_PREFIX + TYPE, "distribution" as String)
-										}
+									// If distribution key value is false, then assign module.type = 'artifact'
+									// Else module.type = 'distribution'
+									if(it.key.equalsIgnoreCase("distribution")){
+										def type
+										if(!it.value)
+											type = 'artifact'
+										else 
+											type = 'distribution'
+										repositories.setProperty(item.repoPath, PROPERTY_PREFIX + "type", type as String)
 									} else 
 										repositories.setProperty(item.repoPath, PROPERTY_PREFIX + it.key, it.value.toLowerCase() as String)
 								}
