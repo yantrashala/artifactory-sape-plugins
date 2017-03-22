@@ -14,8 +14,8 @@ executions{
 
 		try {
 			// getting keyword as url parameters
-			def module = params['module'] ? params['module'][0] as String : "--NA--"
-			def version = params['version'] ? params['version'][0] as String : '*'
+			def module = params?.get('module').getAt(0)
+			def version =   params?.get('module').getAt(1) ?: "*"
 			def aqlserv = ctx.beanForType(AqlService)
 
 			// AQL query to get the module details
