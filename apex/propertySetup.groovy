@@ -28,8 +28,6 @@ import groovy.transform.Field
 @Field final String BASEREVISION = 'baseRevision'
 @Field final String README = 'readme.md'
 @Field final String APEX = 'appx.json'
-@Field final String DISTRIBUTION = 'distribution'
-@Field final String TYPE = 'type'
 
 storage {
 	afterCreate { ItemInfo item ->
@@ -104,8 +102,6 @@ storage {
 	
 								// Print them out to make sure
 								list.each { 
-									// If distribution key value is false, then assign module.type = 'artifact'
-									// Else module.type = 'distribution'
 									if(it.key.equalsIgnoreCase("distribution")){
 										def type
 										if(!it.value)
