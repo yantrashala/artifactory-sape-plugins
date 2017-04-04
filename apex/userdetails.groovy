@@ -22,13 +22,22 @@ executions{
 					userEntity = crowdClient.getUser(username);
 					json['displayName'] = userEntity.getDisplayName()
 					json['emailId'] = userEntity.getEmailAddress()
+					json['loginID'] = userEntity.getName()
 				}
 				if(email != null && username == null){
 					def emailProperty = new PropertyImpl("email", String.class)
 					def emailRestriction = Restriction.on(emailProperty).exactlyMatching(email)
 					usersList = crowdClient.searchUsers(emailRestriction ,0,1)
-					json['displayName'] =   usersList.getAt(0).getDisplayName()
-					json['emailId'] = usersList.getAt(0).getEmailAddress()
+					if(usersList != null && userList.size() > 0) {
+						json['displayName'] = usersList.getAt(0).getDisplayName()
+						json['emailId'] = usersList.getAt(0).getEmailAddress()
+						json['loginID'] = usersList.getAt(0).getName()
+					} else { 
+						json['displayName'] = usersList.getAt(0).getEmailAddress()
+						json['emailId'] = usersList.getAt(0).getEmailAddress()
+						json['loginID'] = usersList.getAt(0).getEmailAddress()
+					}
+					
 				}
 				
 				message = new JsonBuilder(json).toPrettyString()
