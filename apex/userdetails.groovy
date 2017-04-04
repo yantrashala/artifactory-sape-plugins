@@ -10,22 +10,20 @@ executions{
 		try {
 			String username = params?.get('username')?.getAt(0)
 			String email = params?.get('email')?.getAt(0)
-			log.info("this is username : "+username)
-			log.info("this is email : "+email)
+			log.debug("username : "+username)
+			log.debug("email : "+email)
 			def artifactoryCrowdClient= ctx.beanForType(ArtifactoryCrowdClient.class);
 			if(artifactoryCrowdClient.isCrowdAvailable()) {
 				def crowdClient = artifactoryCrowdClient.getHttpAuthenticator().getClient();
 				def usersList = []
 				def userEntity
 				def json = [:]
-				if(username != null){
-					log.info("reached email empty : "+username)
+				if(username != null){			
 					userEntity = crowdClient.getUser(username);
 					json['displayName'] = userEntity.getDisplayName()
 					json['emailId'] = userEntity.getEmailAddress()
 				}
 				if(email != null && username == null){
-					log.info("reached user empty : "+email)
 					def emailProperty = new PropertyImpl("email", String.class)
 					def emailRestriction = Restriction.on(emailProperty).exactlyMatching(email)
 					usersList = crowdClient.searchUsers(emailRestriction ,0,1)
