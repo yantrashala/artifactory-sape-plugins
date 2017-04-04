@@ -28,16 +28,10 @@ executions{
 					def emailProperty = new PropertyImpl("email", String.class)
 					def emailRestriction = Restriction.on(emailProperty).exactlyMatching(email)
 					usersList = crowdClient.searchUsers(emailRestriction ,0,1)
-					if(usersList != null && userList.size() > 0) {
-						json['displayName'] = usersList.getAt(0).getDisplayName()
-						json['emailId'] = usersList.getAt(0).getEmailAddress()
-						json['loginID'] = usersList.getAt(0).getName()
-					} else { 
-						json['displayName'] = usersList.getAt(0).getEmailAddress()
-						json['emailId'] = usersList.getAt(0).getEmailAddress()
-						json['loginID'] = usersList.getAt(0).getEmailAddress()
-					}
 					
+					json['displayName'] = usersList.size() > 0 ? usersList.getAt(0).getDisplayName() : email
+					json['emailId'] = usersList.size() > 0 ? usersList.getAt(0).getEmailAddress() : email
+					json['loginID'] = usersList.size() > 0 ? usersList.getAt(0).getName() : email
 				}
 				
 				message = new JsonBuilder(json).toPrettyString()
