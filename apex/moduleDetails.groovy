@@ -21,10 +21,10 @@ executions{
 
 			// AQL query to get the module details
 			def aql = "items.find({\"\$and\":["+
-						"{\"\$or\":[{\"@module.name\":{\"\$match\":\"$module\"}},{\"@npm.name\":{\"\$match\":\"$module\"}}]},"+
+						"{\"\$or\":[{\"@module.name\":{\"\$match\":\"$module\"}}]},"+
 						"{\"\$or\":[{\"@npm.version\":{\"\$match\":\"$version\"}},{\"@module.baseRevision\":{\"\$match\":\"$version\"}},{\"@composer.version\":{\"\$match\":\"$version\"}}]}"+
 					  "]}).include(\"*\")"
-			log.debug('---------------AQL---------'+aql)
+			log.info('---------------AQL---------'+aql)
 
 			def queryresults = aqlserv.executeQueryEager(aql).results
 			log.info("result set size  "+queryresults.size())
@@ -39,7 +39,7 @@ executions{
 				// Getting the properties for the required module name
 				def properties  = repositories.getProperties(rpath)
 							
-				details['name'] = properties.get("npm.name").getAt(0) ?: properties.get("composer.name").getAt(0) ?: properties.get("module.name").getAt(0) ?: "N/A"
+				details['name'] = properties.get("module.name").getAt(0) ?: "N/A"
 				details['version'] = properties.get("npm.version").getAt(0)?: properties.get("composer.version").getAt(0) ?: properties.get("module.baseRevision").getAt(0) ?: "N/A"
 				details['image'] = properties.get("module.image").getAt(0) ?: "N/A"
 				details['publisher'] = aqlresult.getModifiedBy()
@@ -50,11 +50,12 @@ executions{
 				details['readme'] =  properties.get("module.readme").getAt(0) ?: "N/A"
 				details['gatekeepers'] = properties.get("module.gatekeepers").getAt(0) ?: "N/A"
 				details['keywords']= properties.get("module.keywords").getAt(0) ?: "N/A"
+				details['organization'] = properties.get("module.organization").getAt(0) ?: "N/A"
 				details['team']= properties.get("module.team").getAt(0) ?: "N/A"
 				details['type']= properties.get("module.type").getAt(0) ?: "N/A"
 				log.info('---------------2--------------')
 				// To get the version history for the given module, so firing a query to get all the versions
-				def names1 = module.collect { ['@module.name': ['$match': module], '@npm.name': ['$match': module]]}
+				def names1 = module.collect { ['@module.name': ['$match': module]]}
 				def query1 = ['$or': names1]
 				def aql1 = "items.find(${new JsonBuilder(query1).toString()})" +
 						".include(\"*\")" + 

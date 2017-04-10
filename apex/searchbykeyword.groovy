@@ -26,16 +26,16 @@ executions{
 			
 			def queryresults = aqlserv.executeQueryEager(aql).results
 			log.info(aql.toString())
-			log.info("this is query results object "+queryresults.size())
-			
+			log.info("query result : "+queryresults)
 			def results = [];
 			def result = [:]
+			def checkResult = [:]
 			queryresults.each { aqlresult ->
 								
 				log.info("this is aql result props "+aqlresult.getAt("created").getTime())
 				path = "$aqlresult.path/$aqlresult.name"
 				rpath = RepoPathFactory.create(aqlresult.repo, path)
-                def properties  = repositories.getProperties(rpath)
+                                def properties  = repositories.getProperties(rpath)
                
 				//creating the result JSON while checking whether the property is available or not
 				
@@ -46,15 +46,15 @@ executions{
 				if(repositories.hasProperty(rpath, "module.image"))
 					result['image'] = properties.get("module.image").getAt(0)*/
 				
-				if(!result.containsValue(properties.get("module.name").getAt(0)) ){
+				if(!checkResult.containsKey(properties.get("module.name").getAt(0))){
 					result = new HashMap()
-					//log.info("this is created time "+aqlresult2.created.getTime())
+					
 					result['name'] = properties.get("module.name").getAt(0) ?: "N/A"
 					result['version'] = properties.get("npm.version").getAt(0) ?: properties.get("composer.version").getAt(0) ?: properties.get("module.baseRevision").getAt(0) ?: "N/A"
 					result['image'] = properties.get("module.image").getAt(0) ?: "N/A"
 					//result['created'] = aqlresult.getAt("created").getTime()
 					log.info("has list has this map"+results.contains(result))
-					
+					checkResult[properties.get("module.name").getAt(0)] = result 
 						results += result
 					
 					
