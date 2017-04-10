@@ -28,7 +28,7 @@ import groovy.transform.Field
 @Field final String BASEREVISION = 'baseRevision'
 @Field final String README = 'readme.md'
 @Field final String APEX = 'appx.json'
-
+@Field final String SNAPSHOT = 'SNAPSHOT'
 storage {
 	afterCreate { ItemInfo item ->
 
@@ -46,29 +46,49 @@ storage {
 					
 					// Setting the properties for the default tokens
 					def id = ""
+					ArchiveInputStream archiveInputStream1 = repoService.archiveInputStream(item.repoPath)
+					ArchiveEntry archiveEntry1;
+
 					['organization', 'name', 'baseRevision', 'ext', 'image'].each { String propName ->
 						if(propName.equals(NAME)){
-	                		if (currentLayout.isValid()) id = currentLayout.module
-	                		else id = (item.name =~ '^(?:\\D[^.]*\\-)')[0] - ~'\\-$'
-	                		repositories.setProperty(repoPath, PROPERTY_PREFIX + propName, id as String)
-	                	}
-	                	else if(propName.equals(IMAGE)) {
-	                		repositories.setProperty(repoPath, PROPERTY_PREFIX + propName, "/artifactory/assets/images/" + id + "/" + id + ".jpg" as String)
-	                	}	
-						/*else if(propName.equals(BASEREVISION)) {
-	                		if(item.name.endsWith('zip')){
-								def name = item.name?.split('-')
-								def val = name.size()
-	                			def tokens = name[val-1]?.split('\\.') as List ?: []
-	                			def ver = tokens[0]+'.'+tokens[1]+'.'+tokens[2]
-	                			repositories.setProperty(repoPath, PROPERTY_PREFIX + propName, ver as String)
-	                		} else {
-	                			repositories.setProperty(repoPath, PROPERTY_PREFIX + propName, currentLayout."$propName" as String)
-	                		}
-	                	}*/
-	                	else
-	                		repositories.setProperty(repoPath, PROPERTY_PREFIX + propName, currentLayout."$propName" as String)
-	                } // This pulls all the default tokens
+							if (currentLayout.isValid()){
+								id = currentLayout.module
+							}
+							if(item.getRepoKey().equalsIgnoreCase("npm-release")  ||
+							item.getRepoKey().equalsIgnoreCase("php-release")){
+								while((archiveEntry1 = archiveInputStream1.getNextEntry()) != null){
+									if(archiveEntry1.name.toLowerCase().endsWith("package.json")||
+									archiveEntry1.name.toLowerCase().endsWith("composer.json")){
+										def str = repoService.getGenericArchiveFileContent(repoPath, archiveEntry1.name).getContent()
+										def json = new JsonSlurper().parse(str.toCharArray())
+										def list = new JsonSlurper().parseText( str )
+										list.each {
+											if(it.key.equalsIgnoreCase("name")){
+												id = it.value
+											}
+										}
+
+									}
+								}
+							}
+
+							repositories.setProperty(repoPath, PROPERTY_PREFIX + propName, id as String)
+						}
+						else if(propName.equals(IMAGE)) {
+							repositories.setProperty(repoPath, PROPERTY_PREFIX + propName, "/artifactory/assets/images/" + id + "/" + id + ".jpg" as String)
+						}
+
+						else if(propName.equals(BASEREVISION)) {
+							def mavenVersion = '';
+							if(currentLayout.folderIntegrationRevision.equals(SNAPSHOT))
+								mavenVersion = currentLayout."$propName" + '-' + SNAPSHOT
+							else mavenVersion = currentLayout."$propName"
+							repositories.setProperty(repoPath, PROPERTY_PREFIX + propName, mavenVersion as String)
+						}
+
+						else
+							repositories.setProperty(repoPath, PROPERTY_PREFIX + propName, currentLayout."$propName" as String)
+					} // This pulls all the default tokens
 
 					ArchiveInputStream archiveInputStream = repoService.archiveInputStream(item.repoPath)
 					ArchiveEntry archiveEntry;
