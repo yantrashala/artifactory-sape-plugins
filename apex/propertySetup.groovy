@@ -17,6 +17,7 @@ import org.artifactory.repo.RepoPath
 import org.artifactory.repo.Repositories
 import org.artifactory.resource.ResourceStreamHandle
 import org.artifactory.util.ZipUtils
+import org.artifactory.repo.LocalRepositoryConfiguration
 
 import groovy.json.JsonSlurper
 import groovy.transform.Field
@@ -48,14 +49,15 @@ storage {
 					def id = ""
 					ArchiveInputStream archiveInputStream1 = repoService.archiveInputStream(item.repoPath)
 					ArchiveEntry archiveEntry1;
-
+					LocalRepositoryConfiguration repoConfig = repositories.getRepositoryConfiguration(repoPath.repoKey)
 					['organization', 'name', 'baseRevision', 'ext', 'image'].each { String propName ->
 						if(propName.equals(NAME)){
 							if (currentLayout.isValid()){
 								id = currentLayout.module
 							}
-							if(item.getRepoKey().equalsIgnoreCase("npm-release")  ||
-							item.getRepoKey().equalsIgnoreCase("php-release")){
+							if (repoConfig.getPackageType().equalsIgnoreCase("Npm") || 
+								repoConfig.getPackageType().equalsIgnoreCase("Composer")){
+								log.debug("package type : "+repoConfig.getPackageType())
 								while((archiveEntry1 = archiveInputStream1.getNextEntry()) != null){
 									if(archiveEntry1.name.toLowerCase().endsWith("package.json")||
 									archiveEntry1.name.toLowerCase().endsWith("composer.json")){
@@ -97,11 +99,11 @@ storage {
 					def readmeLength = 0
 					def apexLength = 0
 					while ((archiveEntry = archiveInputStream.getNextEntry()) != null) {
-						log.info('----------------'+archiveEntry.name)
+
 						if(archiveEntry.name.toLowerCase().endsWith(README)){
 							if(readmeLength == 0 || readmeLength > archiveEntry.name.length()) {
 								readmeLength = archiveEntry.name.length()
-								log.info("Inside Readme condition :: "+archiveEntry.name)
+
 								def downloadPath = item.repoKey + "/" + item.repoPath.path + "!" + "/" + archiveEntry.name
 								repositories.setProperty(item.repoPath, PROPERTY_PREFIX + "readme", downloadPath as String)
 							}
@@ -109,7 +111,7 @@ storage {
 						else if(archiveEntry.name.toLowerCase().endsWith(APEX) ) {
 							if(apexLength == 0 || apexLength > archiveEntry.name.length()) {
 								apexLength = archiveEntry.name.length()
-								log.info("Inside Apex condition :: "+archiveEntry.name)
+
 								def downloadPath = item.repoKey + "/" + item.repoPath.path + "!" + "/" + archiveEntry.name
 								repositories.setProperty(item.repoPath, PROPERTY_PREFIX + "appx", downloadPath as String)
 								
