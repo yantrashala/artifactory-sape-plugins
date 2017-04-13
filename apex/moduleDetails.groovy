@@ -73,7 +73,7 @@ executions{
 					def properties1  = repositories.getProperties(rpath1)
 					
 					result['name'] = properties1.get("module.name").getAt(0) ?: "N/A"
-					result['version'] = properties1.get("npm.version").getAt(0) ?: properties1.get("module.baseRevision").getAt(0) ?: "N/A"
+					result['version'] = properties1.get("npm.version").getAt(0) ?: properties1.get("composer.version").getAt(0) ?: properties1.get("module.baseRevision").getAt(0) ?: "N/A"
 					result['lastModifiedOn'] = aqlresult1.created.getTime()
 							
 					results += result
