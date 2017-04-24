@@ -44,7 +44,7 @@ storage {
 
 				try  {
 					def properties  = repositories.getProperties(repoPath)
-					
+
 					// Setting the properties for the default tokens
 					def id = ""
 					ArchiveInputStream archiveInputStream1 = repoService.archiveInputStream(item.repoPath)
@@ -55,7 +55,7 @@ storage {
 							if (currentLayout.isValid()){
 								id = currentLayout.module
 							}
-							if (repoConfig.getPackageType().equalsIgnoreCase("Npm") || 
+							if (repoConfig.getPackageType().equalsIgnoreCase("Npm") ||
 								repoConfig.getPackageType().equalsIgnoreCase("Composer")){
 								log.debug("package type : "+repoConfig.getPackageType())
 								while((archiveEntry1 = archiveInputStream1.getNextEntry()) != null){
@@ -77,7 +77,7 @@ storage {
 							repositories.setProperty(repoPath, PROPERTY_PREFIX + propName, id as String)
 						}
 						else if(propName.equals(IMAGE)) {
-							repositories.setProperty(repoPath, PROPERTY_PREFIX + propName, "/artifactory/assets/images/" + id + "/" + id + ".jpg" as String)
+							repositories.setProperty(repoPath, PROPERTY_PREFIX + propName, "/artifactory/assets/images/common/noImage.jpg" as String)
 						}
 
 						else if(propName.equals(BASEREVISION)) {
@@ -94,7 +94,7 @@ storage {
 
 					ArchiveInputStream archiveInputStream = repoService.archiveInputStream(item.repoPath)
 					ArchiveEntry archiveEntry;
-					
+
 					// Below two length flags are to get the shortest path for readme and apex file
 					def readmeLength = 0
 					def apexLength = 0
@@ -114,24 +114,24 @@ storage {
 
 								def downloadPath = item.repoKey + "/" + item.repoPath.path + "!" + "/" + archiveEntry.name
 								repositories.setProperty(item.repoPath, PROPERTY_PREFIX + "appx", downloadPath as String)
-								
+
 								// Adding properties from apex.json file
 								def str = repoService.getGenericArchiveFileContent(repoPath, archiveEntry.name).getContent()
 								def json = new JsonSlurper().parse(str.toCharArray())
-								
+
 								// Parse the response
 								def list = new JsonSlurper().parseText( str )
-	
+
 								// Print them out to make sure
-								list.each { 
+								list.each {
 									if(it.key.equalsIgnoreCase("distribution")){
 										def type
 										if(!it.value)
 											type = 'artifact'
-										else 
+										else
 											type = 'distribution'
 										repositories.setProperty(item.repoPath, PROPERTY_PREFIX + "type", type as String)
-									} else 
+									} else
 										repositories.setProperty(item.repoPath, PROPERTY_PREFIX + it.key, it.value.toLowerCase() as String)
 								}
 							}
