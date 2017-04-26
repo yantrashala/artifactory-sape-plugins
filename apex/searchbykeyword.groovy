@@ -5,6 +5,13 @@ import org.artifactory.aql.result.AqlEagerResult
 import org.artifactory.aql.result.rows.AqlRowResult
 import org.artifactory.aql.result.rows.AqlBaseFullRowImpl
 import org.artifactory.repo.RepoPathFactory
+import org.artifactory.repo.LocalRepositoryConfiguration
+import org.artifactory.addon.AddonsManager;
+import org.artifactory.addon.npm.NpmAddon;
+import org.artifactory.addon.npm.NpmMetadataInfo;
+import org.artifactory.api.context.ContextHelper;
+import org.artifactory.api.repo.RepositoryService;
+import org.artifactory.fs.ItemInfo;
 
 executions{
 	searchbykeyword(httpMethod: 'GET', groups : 'users'){ params ->
@@ -40,13 +47,32 @@ executions{
 				//creating the result JSON while checking whether the property is available or not
 				if(!checkResult.containsKey(properties.get("module.name").getAt(0))){
 					result = new HashMap()
-
 					result['name'] = properties.get("module.name").getAt(0) ?: "N/A"
 					result['version'] = properties.get("npm.version").getAt(0) ?: properties.get("composer.version").getAt(0) ?: properties.get("module.baseRevision").getAt(0) ?: "N/A"
 					result['image'] = properties.get("module.image").getAt(0) ?: "N/A"
-					result['description'] = properties.get("composer.description").getAt(0) ?: "N/A"
 					result['team'] = properties.get("module.team").getAt(0) ?: "N/A"
 					result['type']= properties.get("module.type").getAt(0) ?: "N/A"
+					result['description'] = properties.get("npm.description").getAt(0) ?: properties.get("composer.description").getAt(0) ?: "N/A"
+					if(result['description'] == "N/A")
+					{
+						LocalRepositoryConfiguration repoConfig = repositories.getRepositoryConfiguration(rpath.repoKey)
+						if(repoConfig.getPackageType().equalsIgnoreCase("Npm"))
+						{
+							AddonsManager addonsManager = ContextHelper.get().beanForType(AddonsManager.class)
+							RepositoryService repositoryService = ctx.beanForType(RepositoryService.class);
+							NpmAddon npmAddon = addonsManager.addonByType(NpmAddon.class)
+							if (npmAddon != null) {
+								// get npm meta data
+								ItemInfo itemInfo = repositoryService.getItemInfo(rpath)
+								NpmMetadataInfo npmMetaDataInfo = npmAddon.getNpmMetaDataInfo(rpath)
+								def desc = npmMetaDataInfo.getNpmInfo().description
+								result['description'] = desc
+								repositories.setProperty(rpath, "npm.description", desc as String)
+							}
+						}
+					}
+
+
 					//result['created'] = aqlresult.getAt("created").getTime()
 					log.info("has list has this map"+results.contains(result))
 					checkResult[properties.get("module.name").getAt(0)] = result
