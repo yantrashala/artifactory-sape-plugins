@@ -11,28 +11,29 @@ import org.artifactory.repo.RepoPathFactory
 
 executions{
 	imagePropertySetup(httpMethod: 'GET', groups : 'users'){ params ->
-		
+
 		try {
 			// getting module as url parameters
 			def module = params['module'] ? params['module'][0] as String : "NA"
-			log.info('module-----' + module)
+			def fileName = params?.get('module')?.getAt(1)
+			log.debug('-----' + module + '-----' + fileName)
 			def aqlserv = ctx.beanForType(AqlService)
-				
+
 			def names = module.collect { ['@module.name': ['$match': module.toLowerCase()]]}
 			def query = ['$or': names]
 			def aql = "items.find(${new JsonBuilder(query).toString()})" +
 					".include(\"*\")"
-			
+
 			def queryresults = aqlserv.executeQueryEager(aql).results
 			log.info(aql.toString())
-			
+
 			queryresults.each { aqlresult ->
 				path = "$aqlresult.path/$aqlresult.name"
 				rpath = RepoPathFactory.create(aqlresult.repo, path)
 				def properties  = repositories.getProperties(rpath)
-							
+
 				def moduleName = properties.get("module.name").getAt(0)
-				repositories.setProperty(rpath, "module.image", "/artifactory/assets/images/"+moduleName+"/"+moduleName+".jpg")
+				repositories.setProperty(rpath, "module.image", "/artifactory/assets/images/"+moduleName+"/"+fileName)
 			}
 			def json = [:]
 			json['message'] = "Image uploaded successfully"
