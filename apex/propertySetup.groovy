@@ -59,7 +59,7 @@ storage {
 								repoConfig.getPackageType().equalsIgnoreCase("Composer")){
 								log.debug("package type : "+repoConfig.getPackageType())
 								while((archiveEntry1 = archiveInputStream1.getNextEntry()) != null){
-									if(archiveEntry1.name.toLowerCase().endsWith("package.json")||
+								if(archiveEntry1.name.toLowerCase().equals("package/package.json")||
 									archiveEntry1.name.toLowerCase().endsWith("composer.json")){
 										def str = repoService.getGenericArchiveFileContent(repoPath, archiveEntry1.name).getContent()
 										def json = new JsonSlurper().parse(str.toCharArray())
