@@ -56,6 +56,7 @@ executions{
 					details['description'] = properties.get("npm.description").getAt(0) ?: properties.get("composer.description").getAt(0) ?: "N/A"
 					if(details['description'] == "N/A")
 					{
+						details['description'] = ""
 						LocalRepositoryConfiguration repoConfig = repositories.getRepositoryConfiguration(rpath.repoKey)
 						if(repoConfig.getPackageType().equalsIgnoreCase("Npm"))
 						{
