@@ -47,11 +47,11 @@ executions{
 				//creating the result JSON while checking whether the property is available or not
 				if(!checkResult.containsKey(properties.get("module.name").getAt(0))){
 					result = new HashMap()
-					result['name'] = properties.get("module.name").getAt(0) ?: "N/A"
+					result['name'] = properties.get("module.name").getAt(0) ?: ""
 					result['version'] = properties.get("npm.version").getAt(0) ?: properties.get("composer.version").getAt(0) ?: properties.get("module.baseRevision").getAt(0) ?: "N/A"
-					result['image'] = properties.get("module.image").getAt(0) ?: "N/A"
-					result['team'] = properties.get("module.team").getAt(0) ?: "N/A"
-					result['type']= properties.get("module.type").getAt(0) ?: "N/A"
+					result['image'] = properties.get("module.image").getAt(0) ?: ""
+					result['team'] = properties.get("module.team").getAt(0) ?: ""
+					result['type']= properties.get("module.type").getAt(0) ?: ""
 					result['description'] = properties.get("npm.description").getAt(0) ?: properties.get("composer.description").getAt(0) ?: "N/A"
 					if(result['description'] == "N/A")
 					{
