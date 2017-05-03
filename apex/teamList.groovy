@@ -8,8 +8,8 @@ import org.artifactory.repo.RepoPath
 import org.artifactory.api.repo.RepositoryService
 import org.artifactory.fs.FileInfo
 
-executions{
-	teamList(httpMethod: 'GET', groups : 'admin'){ params ->
+jobs{
+	teamListJob(cron: "0 1 0 * * *"){
 
 		try {
 			def aqlserv = ctx.beanForType(AqlService)
@@ -38,26 +38,24 @@ executions{
 			message = new JsonBuilder(json).toPrettyString()
 			status = 200
 
-			asSystem {
-				// Get the RepoPath of the tags file and getting the FileInfo
-				RepoPath repoPath = RepoPathFactory.create("content", "data/tags.json")
-				RepositoryService repoService = ctx.beanForType(RepositoryService.class);
-				FileInfo fileInfo= repoService.getFileInfo(repoPath)
-				def str = repoService.getStringContent(fileInfo);
+			// Get the RepoPath of the tags file and getting the FileInfo
+			RepoPath repoPath = RepoPathFactory.create("content", "data/tags.json")
+			RepositoryService repoService = ctx.beanForType(RepositoryService.class);
+			FileInfo fileInfo= repoService.getFileInfo(repoPath)
+			def str = repoService.getStringContent(fileInfo);
 
-				// Converting the data from tags.json file in a json
-				def jsonString = new JsonSlurper().parse(str.toCharArray())
+			// Converting the data from tags.json file in a json
+			def jsonString = new JsonSlurper().parse(str.toCharArray())
 
-				// Copying the new team Array in the existing json
-				jsonString['team'] = results
-				log.info('jsonString Complete--- '+jsonString);
+			// Copying the new team Array in the existing json
+			jsonString['team'] = results
+			log.info('jsonString Complete--- '+jsonString);
 
-				// Getting the file path and copying the updated json in tags.json file
-				def filestoreDir = new File(ctx.artifactoryHome.dataDir, 'filestore')
-				def sha1 = fileInfo.checksumsInfo.sha1
-        def filestoreFile = new File(filestoreDir, "${sha1.substring(0, 2)}/$sha1")
-				filestoreFile.write(new JsonBuilder(jsonString).toPrettyString())
-			}
+			// Getting the file path and copying the updated json in tags.json file
+			def filestoreDir = new File(ctx.artifactoryHome.dataDir, 'filestore')
+			def sha1 = fileInfo.checksumsInfo.sha1
+      def filestoreFile = new File(filestoreDir, "${sha1.substring(0, 2)}/$sha1")
+			filestoreFile.write(new JsonBuilder(jsonString).toPrettyString())
 
 		} catch (e) {
 			log.error 'Failed to execute plugin', e
