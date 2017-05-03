@@ -8,8 +8,8 @@ import org.artifactory.repo.RepoPath
 import org.artifactory.api.repo.RepositoryService
 import org.artifactory.fs.FileInfo
 
-jobs{
-	teamListJob(cron: "0 1 0 * * *"){
+executions{
+	teamList(httpMethod: 'GET', groups : 'users'){ params ->
 
 		try {
 			def aqlserv = ctx.beanForType(AqlService)
