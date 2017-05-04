@@ -29,7 +29,7 @@ executions{
 
 			def sub = ['$desc':["created"]]
 			def aql = "items.find(${new JsonBuilder(query).toString()})" +
-					".include(\"*\").sort(${new JsonBuilder(sub).toString()}).limit(51)"
+					".include(\"*\").sort(${new JsonBuilder(sub).toString()})"
 
 			def queryresults = aqlserv.executeQueryEager(aql).results
 			log.info(aql.toString())
@@ -48,12 +48,12 @@ executions{
 				if(!checkResult.containsKey(properties.get("module.name").getAt(0))){
 					result = new HashMap()
 					result['name'] = properties.get("module.name").getAt(0) ?: ""
-					result['version'] = properties.get("npm.version").getAt(0) ?: properties.get("composer.version").getAt(0) ?: properties.get("module.baseRevision").getAt(0) ?: "N/A"
+					result['version'] = properties.get("npm.version").getAt(0) ?: properties.get("composer.version").getAt(0) ?: properties.get("module.baseRevision").getAt(0) ?: "NA"
 					result['image'] = properties.get("module.image").getAt(0) ?: ""
 					result['team'] = properties.get("module.team").getAt(0) ?: ""
 					result['type']= properties.get("module.type").getAt(0) ?: ""
-					result['description'] = properties.get("npm.description").getAt(0) ?: properties.get("composer.description").getAt(0) ?: "N/A"
-					if(result['description'] == "N/A")
+					result['description'] = properties.get("npm.description").getAt(0) ?: properties.get("composer.description").getAt(0) ?: "NA"
+					if(result['description'] == "NA")
 					{
 						result['description'] = ""
 						LocalRepositoryConfiguration repoConfig = repositories.getRepositoryConfiguration(rpath.repoKey)

@@ -38,7 +38,7 @@ storage {
 			RepositoryService repoService = ctx.beanForType(RepositoryService.class);
 			FileLayoutInfo currentLayout = repositories.getLayoutInfo(repoPath)
 			def filePath = item.repoPath.path.toLowerCase()
-
+			
 			if (ZipUtils.isZipFamilyArchive(filePath) || ZipUtils.isTarArchive(filePath) ||
 			ZipUtils.isTgzFamilyArchive(filePath) || ZipUtils.isGzCompress(filePath)) {
 
