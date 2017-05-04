@@ -17,7 +17,7 @@ executions{
 
 			def module = params?.get('module').getAt(0)
 			def version =   params?.get('module').getAt(1)
-			if(version.equals("N/A")){
+			if(version.equals("NA")){
 				version = "*"
 			}
 			def aqlserv = ctx.beanForType(AqlService)
