@@ -82,7 +82,7 @@ executions{
 
 				}else{
 					log.info("reached else")
-					result['version'] = properties.get("npm.version").getAt(0) ?: properties.get("module.baseRevision").getAt(0) ?: "N/A"
+					result['version'] = properties.get("npm.version").getAt(0) ?: properties.get("module.baseRevision").getAt(0) ?: "NA"
 				}
 			}
 
@@ -114,7 +114,9 @@ executions{
 			def aqlserv = ctx.beanForType(AqlService)
 			def names =  [["repo":reponame,'@module.name':"*"]]
 			def query = ['$and': names]
-			def aql = "items.find(${new JsonBuilder(query).toString()})"
+			def sub = ['$desc':["created"]]
+			def aql = "items.find(${new JsonBuilder(query).toString()})" +
+					".include(\"*\").sort(${new JsonBuilder(sub).toString()})"
 			log.info("AQL query  : "+aql)
 			def queryresults = aqlserv.executeQueryEager(aql).results
 			def results = [];
@@ -123,20 +125,22 @@ executions{
 			queryresults.each { aqlresult ->
 				path = "$aqlresult.path/$aqlresult.name"
 				rpath = RepoPathFactory.create(aqlresult.repo, path)
-                def properties  = repositories.getProperties(rpath)
-				if(!checkResult.containsKey(properties.get("module.name").getAt(0))){
+        def properties  = repositories.getProperties(rpath)
+				def moduleNameCheck = properties.get("module.name").getAt(0)
+				if(!checkResult.containsKey(moduleNameCheck)) {
 					result = new HashMap()
-					result['name'] = properties.get("module.name").getAt(0)?: ""
-					result['version'] = properties.get("npm.version").getAt(0) ?: properties.get("composer.version").getAt(0) ?: properties.get("module.baseRevision").getAt(0)?: ""
+					result['name'] = moduleNameCheck
+					result['version'] = properties.get("npm.version").getAt(0) ?: properties.get("composer.version").getAt(0) ?: properties.get("module.baseRevision").getAt(0)?: "NA"
 					result['image'] = properties.get("module.image").getAt(0) ?: ""
 					result['team'] = properties.get("module.team").getAt(0)?: ""
 					result['type']= properties.get("module.type").getAt(0) ?: ""
 					result['description'] = properties.get("npm.description").getAt(0) ?: properties.get("composer.description").getAt(0)?: ""
-				}else{
-					result['version'] = properties.get("npm.version").getAt(0) ?: properties.get("module.baseRevision").getAt(0)?: ""
-				}
-					checkResult[properties.get("module.name").getAt(0)] = result
+
+					checkResult[moduleNameCheck] = result
 					results += result
+				}//else{
+					//result['version'] = properties.get("npm.version").getAt(0) ?: properties.get("module.baseRevision").getAt(0)?: "NA"
+				//}
 			}
 			def json = [:]
 			json['results'] = results;
