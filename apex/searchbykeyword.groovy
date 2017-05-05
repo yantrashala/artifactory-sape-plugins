@@ -5,13 +5,6 @@ import org.artifactory.aql.result.AqlEagerResult
 import org.artifactory.aql.result.rows.AqlRowResult
 import org.artifactory.aql.result.rows.AqlBaseFullRowImpl
 import org.artifactory.repo.RepoPathFactory
-import org.artifactory.repo.LocalRepositoryConfiguration
-import org.artifactory.addon.AddonsManager;
-import org.artifactory.addon.npm.NpmAddon;
-import org.artifactory.addon.npm.NpmMetadataInfo;
-import org.artifactory.api.context.ContextHelper;
-import org.artifactory.api.repo.RepositoryService;
-import org.artifactory.fs.ItemInfo;
 
 executions{
 	searchbykeyword(httpMethod: 'GET', groups : 'users'){ params ->
@@ -52,33 +45,11 @@ executions{
 					result['image'] = properties.get("module.image").getAt(0) ?: ""
 					result['team'] = properties.get("module.team").getAt(0) ?: ""
 					result['type']= properties.get("module.type").getAt(0) ?: ""
-					result['description'] = properties.get("npm.description").getAt(0) ?: properties.get("composer.description").getAt(0) ?: "NA"
-					if(result['description'] == "NA")
-					{
-						result['description'] = ""
-						LocalRepositoryConfiguration repoConfig = repositories.getRepositoryConfiguration(rpath.repoKey)
-						if(repoConfig.getPackageType().equalsIgnoreCase("Npm"))
-						{
-							AddonsManager addonsManager = ContextHelper.get().beanForType(AddonsManager.class)
-							RepositoryService repositoryService = ctx.beanForType(RepositoryService.class);
-							NpmAddon npmAddon = addonsManager.addonByType(NpmAddon.class)
-							if (npmAddon != null) {
-								// get npm meta data
-								ItemInfo itemInfo = repositoryService.getItemInfo(rpath)
-								NpmMetadataInfo npmMetaDataInfo = npmAddon.getNpmMetaDataInfo(rpath)
-								def desc = npmMetaDataInfo.getNpmInfo().description
-								result['description'] = desc
-								repositories.setProperty(rpath, "npm.description", desc as String)
-							}
-						}
-					}
-
-
+					result['description'] = properties.get("npm.description").getAt(0) ?: properties.get("composer.description").getAt(0) ?: ""
 					//result['created'] = aqlresult.getAt("created").getTime()
 					log.info("has list has this map"+results.contains(result))
 					checkResult[properties.get("module.name").getAt(0)] = result
-						results += result
-
+					results += result
 
 				}else{
 					log.info("reached else")
@@ -125,7 +96,7 @@ executions{
 			queryresults.each { aqlresult ->
 				path = "$aqlresult.path/$aqlresult.name"
 				rpath = RepoPathFactory.create(aqlresult.repo, path)
-        def properties  = repositories.getProperties(rpath)
+                		def properties  = repositories.getProperties(rpath)
 				def moduleNameCheck = properties.get("module.name").getAt(0)
 				if(!checkResult.containsKey(moduleNameCheck)) {
 					result = new HashMap()
