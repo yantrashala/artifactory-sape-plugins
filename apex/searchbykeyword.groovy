@@ -53,7 +53,7 @@ executions{
 
 				}else{
 					log.info("reached else")
-					result['version'] = properties.get("npm.version").getAt(0) ?: properties.get("module.baseRevision").getAt(0) ?: "NA"
+					//result['version'] = properties.get("npm.version").getAt(0) ?: properties.get("module.baseRevision").getAt(0) ?: "NA"
 				}
 			}
 
