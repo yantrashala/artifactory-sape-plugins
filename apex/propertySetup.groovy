@@ -18,10 +18,12 @@ import org.artifactory.repo.Repositories
 import org.artifactory.resource.ResourceStreamHandle
 import org.artifactory.util.ZipUtils
 import org.artifactory.repo.LocalRepositoryConfiguration
-
+import org.artifactory.addon.AddonsManager;
+import org.artifactory.addon.npm.NpmAddon;
+import org.artifactory.addon.npm.NpmMetadataInfo;
 import groovy.json.JsonSlurper
 import groovy.transform.Field
-
+import groovy.util.XmlSlurper
 
 @Field final String PROPERTY_PREFIX = 'module.'
 @Field final String NAME = 'name'
@@ -92,6 +94,17 @@ storage {
 							repositories.setProperty(repoPath, PROPERTY_PREFIX + propName, currentLayout."$propName" as String)
 					} // This pulls all the default tokens
 
+					// To set description for NPM
+					if (repoConfig.getPackageType().equalsIgnoreCase("Npm")){
+						AddonsManager addonsManager = ContextHelper.get().beanForType(AddonsManager.class)
+						NpmAddon npmAddon = addonsManager.addonByType(NpmAddon.class)
+						if (npmAddon != null) {
+							// get npm meta data
+							NpmMetadataInfo npmMetaDataInfo = npmAddon.getNpmMetaDataInfo(repoPath)
+							repositories.setProperty(repoPath, "npm.description", npmMetaDataInfo.getNpmInfo().description as String)
+						}
+					}
+
 					ArchiveInputStream archiveInputStream = repoService.archiveInputStream(item.repoPath)
 					ArchiveEntry archiveEntry;
 
@@ -99,7 +112,6 @@ storage {
 					def readmeLength = 0
 					def apexLength = 0
 					while ((archiveEntry = archiveInputStream.getNextEntry()) != null) {
-
 						if(archiveEntry.name.toLowerCase().endsWith(README)){
 							if(readmeLength == 0 || readmeLength > archiveEntry.name.length()) {
 								readmeLength = archiveEntry.name.length()
@@ -135,6 +147,11 @@ storage {
 										repositories.setProperty(item.repoPath, PROPERTY_PREFIX + it.key, it.value.toLowerCase() as String)
 								}
 							}
+						} else if(archiveEntry.name.toLowerCase().endsWith("pom.xml")){
+							// To setup description for Maven application
+							def str = repoService.getGenericArchiveFileContent(repoPath, archiveEntry.name).getContent()
+							def pom= new XmlParser().parseText(str)
+							repositories.setProperty(item.repoPath, PROPERTY_PREFIX + "description", pom.description.text() as String)
 						}
 					}
 				} catch (IOException e) {

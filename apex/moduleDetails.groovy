@@ -14,9 +14,12 @@ executions{
 
 		try {
 			// getting keyword as url parameters
-			
+
 			def module = params?.get('module').getAt(0)
-			def version =   params?.get('module').getAt(1) ?: "*"
+			def version =   params?.get('module').getAt(1)
+			if(version.equals("NA")){
+				version = "*"
+			}
 			def aqlserv = ctx.beanForType(AqlService)
 
 			// AQL query to get the module details
@@ -31,29 +34,28 @@ executions{
 			def details = [:]
 			if(queryresults.size() > 0) {
 				AqlBaseFullRowImpl aqlresult = queryresults.get(0)
-				
+
 				path = "$aqlresult.path/$aqlresult.name"
 				rpath = RepoPathFactory.create(aqlresult.repo, path)
-				
+
 				// Getting the properties for the required module name
 				def properties  = repositories.getProperties(rpath)
-							
-				details['name'] = properties.get("module.name").getAt(0) ?: "N/A"
-				details['version'] = properties.get("npm.version").getAt(0)?: properties.get("composer.version").getAt(0) ?: 
-									properties.get("module.baseRevision").getAt(0) ?: "N/A"
-				details['image'] = properties.get("module.image").getAt(0) ?: "N/A"
+
+				details['name'] = properties.get("module.name").getAt(0) ?: "NA"
+				details['version'] = properties.get("npm.version").getAt(0) ?: properties.get("composer.version").getAt(0) ?: properties.get("module.baseRevision").getAt(0) ?: "NA"
+				details['image'] = properties.get("module.image").getAt(0) ?: "NA"
 				details['publisher'] = aqlresult.getModifiedBy()
 				details['lastModifiedOn'] = aqlresult.created.getTime()
-				details['license'] = properties.get("artifactory.licenses").getAt(0) ?: "N/A"
+				details['license'] = properties.get("artifactory.licenses").getAt(0) ?: "NA"
 				details['scm'] = "tools.publicis.sapient.com/bitbucket-code-commons/"
 				details['collaborators'] = ""
-				details['readme'] =  properties.get("module.readme").getAt(0) ?: "N/A"
-				details['gatekeepers'] = properties.get("module.gatekeepers").getAt(0) ?: "N/A"
-				details['keywords']= properties.get("module.keywords").getAt(0) ?: "N/A"
-				details['organization'] = properties.get("module.organization").getAt(0) ?: "N/A"
-				details['team']= properties.get("module.team").getAt(0) ?: "N/A"
-				details['type']= properties.get("module.type").getAt(0) ?: "N/A"
-				
+				details['readme'] =  properties.get("module.readme").getAt(0) ?: "NA"
+				details['gatekeepers'] = properties.get("module.gatekeepers").getAt(0) ?: "NA"
+				details['keywords']= properties.get("module.keywords").getAt(0) ?: "NA"
+				details['organization'] = properties.get("module.organization").getAt(0) ?: "NA"
+				details['team']= properties.get("module.team").getAt(0) ?: "NA"
+				details['type']= properties.get("module.type").getAt(0) ?: "NA"
+
 				// To get the version history for the given module, so firing a query to get all the versions
 				def moduleNames = module.collect { ['@module.name': ['$match': module]]}
 				def modquery = ['$or': moduleNames]
@@ -68,9 +70,9 @@ executions{
 				    path = "$sortaqlresult.path/$sortaqlresult.name"
 					repositorypath = RepoPathFactory.create(sortaqlresult.repo, path)
 					def repoProperties  = repositories.getProperties(repositorypath)
-					result['name'] = repoProperties.get("module.name").getAt(0) ?: "N/A"
-					result['version'] = repoProperties.get("npm.version").getAt(0) ?: repoProperties.get("composer.version").getAt(0) ?: 
-										repoProperties.get("module.baseRevision").getAt(0) ?: "N/A"
+					result['name'] = repoProperties.get("module.name").getAt(0) ?: "NA"
+					result['version'] = repoProperties.get("npm.version").getAt(0) ?: repoProperties.get("composer.version").getAt(0) ?:
+										repoProperties.get("module.baseRevision").getAt(0) ?: "NA"
 					result['lastModifiedOn'] = sortaqlresult.created.getTime()
 					results += result
 				}
