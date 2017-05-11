@@ -1,5 +1,4 @@
 import java.io.IOException
-import java.util.logging.Logger
 
 import org.apache.commons.compress.archivers.ArchiveEntry
 import org.apache.commons.compress.archivers.ArchiveInputStream
@@ -8,14 +7,10 @@ import org.apache.commons.compress.archivers.zip.ZipArchiveInputStream
 import org.apache.commons.compress.compressors.gzip.GzipCompressorInputStream
 import org.artifactory.api.context.ContextHelper
 import org.artifactory.api.repo.RepositoryService
-import org.artifactory.factory.InfoFactoryHolder
 import org.artifactory.fs.FileLayoutInfo
 import org.artifactory.fs.ItemInfo
-import org.artifactory.model.xstream.fs.FileInfoImpl
-import org.artifactory.repo.InternalRepoPathFactory
 import org.artifactory.repo.RepoPath
 import org.artifactory.repo.Repositories
-import org.artifactory.resource.ResourceStreamHandle
 import org.artifactory.util.ZipUtils
 import org.artifactory.repo.LocalRepositoryConfiguration
 import org.artifactory.addon.AddonsManager;
@@ -23,7 +18,6 @@ import org.artifactory.addon.npm.NpmAddon;
 import org.artifactory.addon.npm.NpmMetadataInfo;
 import groovy.json.JsonSlurper
 import groovy.transform.Field
-import groovy.util.XmlSlurper
 
 @Field final String PROPERTY_PREFIX = 'module.'
 @Field final String NAME = 'name'
@@ -32,6 +26,8 @@ import groovy.util.XmlSlurper
 @Field final String README = 'readme.md'
 @Field final String APEX = 'appx.json'
 @Field final String SNAPSHOT = 'SNAPSHOT'
+@Field final String IMAGEPATH = '/artifactory/assets/images/common/noImage.jpg'
+
 storage {
 	afterCreate { ItemInfo item ->
 
@@ -45,7 +41,6 @@ storage {
 			ZipUtils.isTgzFamilyArchive(filePath) || ZipUtils.isGzCompress(filePath)) {
 
 				try  {
-					def properties  = repositories.getProperties(repoPath)
 
 					// Setting the properties for the default tokens
 					def id = ""
@@ -79,9 +74,8 @@ storage {
 							repositories.setProperty(repoPath, PROPERTY_PREFIX + propName, id as String)
 						}
 						else if(propName.equals(IMAGE)) {
-							repositories.setProperty(repoPath, PROPERTY_PREFIX + propName, "/artifactory/assets/images/common/noImage.jpg" as String)
+							repositories.setProperty(repoPath, PROPERTY_PREFIX + propName, IMAGEPATH as String)
 						}
-
 						else if(propName.equals(BASEREVISION)) {
 							def mavenVersion = '';
 							if(currentLayout.folderIntegrationRevision.equals(SNAPSHOT))
@@ -89,12 +83,12 @@ storage {
 							else mavenVersion = currentLayout."$propName"
 							repositories.setProperty(repoPath, PROPERTY_PREFIX + propName, mavenVersion as String)
 						}
-
-						else
+						else {
 							repositories.setProperty(repoPath, PROPERTY_PREFIX + propName, currentLayout."$propName" as String)
+						}
 					} // This pulls all the default tokens
 
-					// To set description for NPM
+					// To set description for NPM modules
 					if (repoConfig.getPackageType().equalsIgnoreCase("Npm")){
 						AddonsManager addonsManager = ContextHelper.get().beanForType(AddonsManager.class)
 						NpmAddon npmAddon = addonsManager.addonByType(NpmAddon.class)
@@ -157,6 +151,9 @@ storage {
 				} catch (IOException e) {
 					log.error("Failed to get  zip Input Stream: " + e.getMessage());
 				}
+			} else if (filePath.endsWith("manifest.json")) {
+				// Adding Image property for dockers manifest.json file by default
+				repositories.setProperty(repoPath, PROPERTY_PREFIX + "image", IMAGEPATH as String)
 			}
 		}
 	}
