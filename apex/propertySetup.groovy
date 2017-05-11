@@ -44,59 +44,33 @@ storage {
 
 					// Setting the properties for the default tokens
 					def id = ""
-					ArchiveInputStream archiveInputStream1 = repoService.archiveInputStream(item.repoPath)
-					ArchiveEntry archiveEntry1;
+					//ArchiveInputStream archiveInputStream1 = repoService.archiveInputStream(item.repoPath)
+					//ArchiveEntry archiveEntry1;
 					LocalRepositoryConfiguration repoConfig = repositories.getRepositoryConfiguration(repoPath.repoKey)
 					['organization', 'name', 'baseRevision', 'ext', 'image'].each { String propName ->
 						if(propName.equals(NAME)){
 							if (currentLayout.isValid()){
 								id = currentLayout.module
 							}
-							if (repoConfig.getPackageType().equalsIgnoreCase("Npm") ||
+							else if (repoConfig.getPackageType().equalsIgnoreCase("Npm") ||
 								repoConfig.getPackageType().equalsIgnoreCase("Composer")){
 								log.debug("package type : "+repoConfig.getPackageType())
-								while((archiveEntry1 = archiveInputStream1.getNextEntry()) != null){
-								if(archiveEntry1.name.toLowerCase().equals("package/package.json")||
-									archiveEntry1.name.toLowerCase().endsWith("composer.json")){
-										def str = repoService.getGenericArchiveFileContent(repoPath, archiveEntry1.name).getContent()
-										def json = new JsonSlurper().parse(str.toCharArray())
-										def list = new JsonSlurper().parseText( str )
-										list.each {
-											if(it.key.equalsIgnoreCase("name")){
-												id = it.value
-											}
-										}
-
-									}
-								}
+								id = getModuleName(repoService, repoPath)
 							}
-
 							repositories.setProperty(repoPath, PROPERTY_PREFIX + propName, id as String)
 						}
-						else if(propName.equals(IMAGE)) {
+						else if(propName.equals(IMAGE))
 							repositories.setProperty(repoPath, PROPERTY_PREFIX + propName, IMAGEPATH as String)
-						}
-						else if(propName.equals(BASEREVISION)) {
-							def mavenVersion = '';
-							if(currentLayout.folderIntegrationRevision.equals(SNAPSHOT))
-								mavenVersion = currentLayout."$propName" + '-' + SNAPSHOT
-							else mavenVersion = currentLayout."$propName"
-							repositories.setProperty(repoPath, PROPERTY_PREFIX + propName, mavenVersion as String)
-						}
-						else {
+						else if(propName.equals(BASEREVISION))
+							repositories.setProperty(repoPath, PROPERTY_PREFIX + propName, getMavenVersion(currentLayout, propName) as String)
+						else
 							repositories.setProperty(repoPath, PROPERTY_PREFIX + propName, currentLayout."$propName" as String)
-						}
+						
 					} // This pulls all the default tokens
 
 					// To set description for NPM modules
 					if (repoConfig.getPackageType().equalsIgnoreCase("Npm")){
-						AddonsManager addonsManager = ContextHelper.get().beanForType(AddonsManager.class)
-						NpmAddon npmAddon = addonsManager.addonByType(NpmAddon.class)
-						if (npmAddon != null) {
-							// get npm meta data
-							NpmMetadataInfo npmMetaDataInfo = npmAddon.getNpmMetaDataInfo(repoPath)
-							repositories.setProperty(repoPath, "npm.description", npmMetaDataInfo.getNpmInfo().description as String)
-						}
+						setNpmDescription(repoPath)
 					}
 
 					ArchiveInputStream archiveInputStream = repoService.archiveInputStream(item.repoPath)
@@ -110,36 +84,19 @@ storage {
 							if(readmeLength == 0 || readmeLength > archiveEntry.name.length()) {
 								readmeLength = archiveEntry.name.length()
 
-								def downloadPath = item.repoKey + "/" + item.repoPath.path + "!" + "/" + archiveEntry.name
-								repositories.setProperty(item.repoPath, PROPERTY_PREFIX + "readme", downloadPath as String)
+								def downloadPath = getDownloadPath(item.repoKey, item.repoPath.path, archiveEntry.name)
+								repositories.setProperty(item.repoPath, PROPERTY_PREFIX + "readme", downloadPath  as String)
 							}
 						}
 						else if(archiveEntry.name.toLowerCase().endsWith(APEX) ) {
 							if(apexLength == 0 || apexLength > archiveEntry.name.length()) {
 								apexLength = archiveEntry.name.length()
-
-								def downloadPath = item.repoKey + "/" + item.repoPath.path + "!" + "/" + archiveEntry.name
-								repositories.setProperty(item.repoPath, PROPERTY_PREFIX + "appx", downloadPath as String)
+								def downloadPath = getDownloadPath(item.repoKey, item.repoPath.path, archiveEntry.name)
+								repositories.setProperty(item.repoPath, PROPERTY_PREFIX + "appx", downloadPath  as String)
 
 								// Adding properties from apex.json file
 								def str = repoService.getGenericArchiveFileContent(repoPath, archiveEntry.name).getContent()
-								def json = new JsonSlurper().parse(str.toCharArray())
-
-								// Parse the response
-								def list = new JsonSlurper().parseText( str )
-
-								// Print them out to make sure
-								list.each {
-									if(it.key.equalsIgnoreCase("distribution")){
-										def type
-										if(!it.value)
-											type = 'artifact'
-										else
-											type = 'distribution'
-										repositories.setProperty(item.repoPath, PROPERTY_PREFIX + "type", type as String)
-									} else
-										repositories.setProperty(item.repoPath, PROPERTY_PREFIX + it.key, it.value.toLowerCase() as String)
-								}
+								setAppxProperties(str, item.repoPath)
 							}
 						} else if(archiveEntry.name.toLowerCase().endsWith("pom.xml")){
 							// To setup description for Maven application
@@ -156,5 +113,69 @@ storage {
 				repositories.setProperty(repoPath, PROPERTY_PREFIX + "image", IMAGEPATH as String)
 			}
 		}
+	}
+}
+
+private String getModuleName(repoService, repoPath) {
+	def id = ""
+	ArchiveInputStream archiveInputStream1 = repoService.archiveInputStream(repoPath)
+	ArchiveEntry archiveEntry1;
+
+	while((archiveEntry1 = archiveInputStream1.getNextEntry()) != null){
+		if(archiveEntry1.name.toLowerCase().equals("package/package.json")||
+		archiveEntry1.name.toLowerCase().endsWith("composer.json")){
+			def str = repoService.getGenericArchiveFileContent(repoPath, archiveEntry1.name).getContent()
+			def json = new JsonSlurper().parse(str.toCharArray())
+			def list = new JsonSlurper().parseText( str )
+			list.each {
+				if(it.key.equalsIgnoreCase("name")){
+					id = it.value
+				}
+			}
+		}
+	}
+	return id
+}
+
+
+private String getMavenVersion(currentLayout, propName) {
+	if(currentLayout.folderIntegrationRevision.equals(SNAPSHOT))
+		return currentLayout."$propName" + '-' + SNAPSHOT
+	else
+		return currentLayout."$propName"
+}
+
+private void setNpmDescription(repoPath) {
+	AddonsManager addonsManager = ContextHelper.get().beanForType(AddonsManager.class)
+	NpmAddon npmAddon = addonsManager.addonByType(NpmAddon.class)
+	if (npmAddon != null) {
+		// get npm meta data
+		NpmMetadataInfo npmMetaDataInfo = npmAddon.getNpmMetaDataInfo(repoPath)
+		repositories.setProperty(repoPath, "npm.description", npmMetaDataInfo.getNpmInfo().description as String)
+	}
+}
+
+private String getDownloadPath(repoKey, path , name) {
+	return repoKey + "/" + path + "!" + "/" + name
+}
+
+private void setAppxProperties(str, repoPath) {
+
+	def json = new JsonSlurper().parse(str.toCharArray())
+
+	// Parse the response
+	def list = new JsonSlurper().parseText( str )
+
+	// Print them out to make sure
+	list.each {
+		if(it.key.equalsIgnoreCase("distribution")){
+			def type
+			if(!it.value)
+				type = 'artifact'
+			else
+				type = 'distribution'
+			repositories.setProperty(repoPath, PROPERTY_PREFIX + "type", type as String)
+		} else
+			repositories.setProperty(repoPath, PROPERTY_PREFIX + it.key, it.value.toLowerCase() as String)
 	}
 }
