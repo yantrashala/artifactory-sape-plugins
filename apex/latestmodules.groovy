@@ -1,56 +1,22 @@
 import groovy.json.JsonBuilder
-import java.time.chrono.AbstractChronology
 import org.artifactory.aql.AqlService
-import org.artifactory.aql.result.AqlEagerResult
 import org.artifactory.aql.result.rows.AqlBaseFullRowImpl
-import org.artifactory.aql.result.rows.AqlRowResult
 import org.artifactory.repo.RepoPathFactory
-import org.artifactory.repo.LocalRepositoryConfiguration
 
 executions{
 	latestmodules(httpMethod: 'GET', groups : 'users'){ params ->
 
 		try {
-			// getting keyword as url parameters
-			def aqlserv = ctx.beanForType(AqlService)
-			def obj = null
-			def sub = ['$desc':["created"]]
+
 			// AQL query to get the module details
-			def query = ["@module.name":"*"]
-			//def aql = "items.find({\"@module.name\":{\"\$ne\":\"$obj\"}}).sort(${new JsonBuilder(sub).toString()}).limit(10)"
+			def sub = ['$desc':["created"]]
+			def names = [['@module.name':"*"],['@docker.repoName':"*"]]
+			def query = ['$or': names]
+
 			def aql = "items.find(${new JsonBuilder(query).toString()}).sort(${new JsonBuilder(sub).toString()}).limit(12)"
 			log.info('---------------AQL---------'+aql)
 
-			def queryresults = aqlserv.executeQueryEager(aql).results
-			log.info("result set size  "+queryresults.size())
-			def list = []
-
-			for (AqlBaseFullRowImpl var in queryresults) {
-				log.info("this is reppo path : "+var.path)
-				path = "$var.path/$var.name"
-				rpath = RepoPathFactory.create(var.repo, path)
-
-				def properties  = repositories.getProperties(rpath)
-				log.info("this is reppo path : "+var.path)
-				log.info("these are properties : "+properties)
-				if(!properties.isEmpty() /*&&  properties.get("module.name").getAt(0) != null && !properties.get("module.name").getAt(0).isEmpty() */){
-					def details = [:]
-					details['name'] =  properties.get("module.name").getAt(0)
-					details['version'] = properties.get("npm.version").getAt(0)?: properties.get("composer.version").getAt(0) ?: properties.get("module.baseRevision").getAt(0) ?: "NA"
-					details['image'] = properties.get("module.image").getAt(0) ?: ""
-					//details['readme'] =  properties.get("module.readme").getAt(0) ?: "NA"
-					//details['gatekeepers'] = properties.get("module.gatekeepers").getAt(0) ?: "NA"
-					//details['keywords']= properties.get("module.keywords").getAt(0) ?: "NA"
-					details['team']= properties.get("module.team").getAt(0) ?: ""
-					//details['type']= properties.get("module.type").getAt(0) ?: "NA"
-					//details['created'] = var.created.getTime()
-					//details['path'] = rpath.getPath()
-					//details['nameforVar'] = var.getName()
-					details['description'] = properties.get("npm.description").getAt(0) ?: properties.get("composer.description").getAt(0) ?: ""
-					list.add(details)
-				}
-			}
-
+			def list = getResult(aql)
 			message = new JsonBuilder(list).toPrettyString()
 			status = 200
 		} catch (e) {
@@ -59,4 +25,36 @@ executions{
 			status = 500
 		}
 	}
+}
+
+private List getResult(aql) {
+	def list = []
+	try {
+		def aqlserv = ctx.beanForType(AqlService)
+		def queryresults = aqlserv.executeQueryEager(aql).results
+		log.info("result set size  "+queryresults.size())
+
+		for (AqlBaseFullRowImpl var in queryresults) {
+			log.info("this is reppo path : "+var.path)
+			path = "$var.path/$var.name"
+			rpath = RepoPathFactory.create(var.repo, path)
+			def properties  = repositories.getProperties(rpath)
+			log.info("this is reppo path : "+var.path)
+
+			if(!properties.isEmpty()){
+				def details = [:]
+				details['name'] =  properties.get("module.name").getAt(0) ?: properties.get("docker.repoName").getAt(0)
+				details['version'] = properties.get("npm.version").getAt(0) ?: properties.get("composer.version").getAt(0) ?: properties.get("module.baseRevision").getAt(0) ?: properties.get("docker.label.version").getAt(0) ?: "NA"
+				details['image'] = properties.get("module.image").getAt(0) ?: ""
+				details['team']= properties.get("module.team").getAt(0) ?: properties.get("docker.label.team").getAt(0) ?: ""
+				details['description'] = properties.get("npm.description").getAt(0) ?: properties.get("module.description").getAt(0)  ?: properties.get("composer.description").getAt(0) ?: properties.get("docker.label.description").getAt(0) ?: ""
+				list.add(details)
+			}
+		}
+	} catch (e) {
+		log.error 'Failed to execute getResult method in latestmodules plugin', e
+		message = 'Failed to execute getResult method in latestmodules plugin'
+		status = 500
+	}
+	return list
 }
