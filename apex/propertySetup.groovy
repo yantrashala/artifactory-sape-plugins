@@ -57,6 +57,9 @@ storage {
 								log.debug("package type : "+repoConfig.getPackageType())
 								id = getModuleName(repoService, repoPath)
 							}
+							else if(repoConfig.getPackageType().equalsIgnoreCase("NuGet")){
+								id = getNugetModuleName(repoService, repoPath)
+							}
 							repositories.setProperty(repoPath, PROPERTY_PREFIX + propName, id as String)
 						}
 						else if(propName.equals(IMAGE))
@@ -111,6 +114,10 @@ storage {
 			} else if (filePath.endsWith("manifest.json")) {
 				// Adding Image property for dockers manifest.json file by default
 				repositories.setProperty(repoPath, PROPERTY_PREFIX + "image", IMAGEPATH as String)
+				// Setting the module.readme property for dockers.
+				// Setting the readme path same as manifest.json for a docker repository 
+				def readmePath = "dockers/"+ filePath.replaceAll("manifest.json", "readme.md")
+				repositories.setProperty(repoPath, PROPERTY_PREFIX + "readme", readmePath as String) 
 			}
 		}
 	}
@@ -137,6 +144,26 @@ private String getModuleName(repoService, repoPath) {
 	return id
 }
 
+private String getNugetModuleName(repoService,repoPath) {
+	def id = ""
+	ArchiveInputStream archiveInputStream1 = repoService.archiveInputStream(repoPath)
+	ArchiveEntry archiveEntry1;
+
+	while((archiveEntry1 = archiveInputStream1.getNextEntry()) != null){
+		if(archiveEntry1.name.toLowerCase().endsWith("nuspec")){
+			AddonsManager addonsManager = ContextHelper.get().beanForType(AddonsManager.class);
+			UiNuGetAddon uiNuGetAddon = addonsManager.addonByType(UiNuGetAddon.class);
+			if (uiNuGetAddon != null) {
+				NuMetaData nugetSpecMetaData = uiNuGetAddon.getNutSpecMetaData(repoPath);
+				id = nugetSpecMetaData.getId()
+				log.debug("Nuget Id : "+id)
+
+			}
+		}
+
+	}
+	return id;
+}
 
 private String getMavenVersion(currentLayout, propName) {
 	if(currentLayout.folderIntegrationRevision.equals(SNAPSHOT))

@@ -5,6 +5,7 @@ import org.artifactory.repo.RepoPathFactory
 
 executions{
 	moduledetails(httpMethod: 'GET', groups : 'users'){ params ->
+
 		try {
 			// getting keyword as url parameters
 			def module = params?.get('module').getAt(0)
@@ -55,16 +56,17 @@ private HashMap getModuleDetails(aql) {
 			details['image'] = properties.get("module.image").getAt(0) ?: "NA"
 			details['publisher'] = aqlresult.getModifiedBy()
 			details['lastModifiedOn'] = aqlresult.created.getTime()
-			details['license'] = properties.get("artifactory.licenses").getAt(0) ?: "NA"
+			details['license'] = properties.get("artifactory.licenses").getAt(0) ?: ""
 			details['scm'] = "tools.publicis.sapient.com/bitbucket-code-commons/"
 			details['readme'] =  properties.get("module.readme").getAt(0) ?: "NA"
-			details['gatekeepers'] = properties.get("module.gatekeepers").getAt(0) ?: properties.get("docker.label.gatekeepers").getAt(0) ?: "NA"
+			details['gatekeepers'] = properties.get("module.gatekeepers").getAt(0) ?: properties.get("docker.label.gatekeepers").getAt(0) ?: ""
 			details['keywords']= properties.get("module.keywords").getAt(0) ?: properties.get("docker.label.keywords").getAt(0) ?: "NA"
-			details['team']= properties.get("module.team").getAt(0) ?: properties.get("docker.label.team").getAt(0) ?: "NA"
-			details['type']= properties.get("module.type").getAt(0) ?: properties.get("docker.label.type").getAt(0) ?: "NA"
+			details['team']= properties.get("module.team").getAt(0) ?: properties.get("docker.label.team").getAt(0) ?: ""
+			details['type']= properties.get("module.type").getAt(0) ?: properties.get("docker.label.type").getAt(0) ?: ""
 			details['description'] = properties.get("npm.description").getAt(0) ?: properties.get("module.description").getAt(0) ?: properties.get("composer.description").getAt(0) ?: properties.get("docker.label.description").getAt(0) ?: ""
 			details['versionHistory'] = getVersionHistory(moduleName)
 		}
+
 	} catch (e) {
 		log.error 'Failed to execute getModuleDetails method in moduleDetails plugin', e
 		message = 'Failed to execute getModuleDetails method in moduleDetails plugin'
