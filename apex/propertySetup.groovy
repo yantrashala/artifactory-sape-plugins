@@ -47,8 +47,6 @@ storage {
 
 					// Setting the properties for the default tokens
 					def id = ""
-					//ArchiveInputStream archiveInputStream1 = repoService.archiveInputStream(item.repoPath)
-					//ArchiveEntry archiveEntry1;
 					LocalRepositoryConfiguration repoConfig = repositories.getRepositoryConfiguration(repoPath.repoKey)
 					['organization', 'name', 'baseRevision', 'ext', 'image'].each { String propName ->
 						if(propName.equals(NAME)){
@@ -71,7 +69,7 @@ storage {
 							repositories.setProperty(repoPath, PROPERTY_PREFIX + propName, getMavenVersion(currentLayout, propName) as String)
 						else
 							repositories.setProperty(repoPath, PROPERTY_PREFIX + propName, currentLayout."$propName" as String)
-						
+
 					} // This pulls all the default tokens
 
 					// To set description for NPM modules
@@ -102,7 +100,7 @@ storage {
 
 								// Adding properties from apex.json file
 								def str = repoService.getGenericArchiveFileContent(repoPath, archiveEntry.name).getContent()
-								setAppxProperties(str, item.repoPath)
+								setAppxProperties(str, item.repoPath, id)
 							}
 						} else if(archiveEntry.name.toLowerCase().endsWith("pom.xml")){
 							// To setup description for Maven application
@@ -118,9 +116,9 @@ storage {
 				// Adding Image property for dockers manifest.json file by default
 				repositories.setProperty(repoPath, PROPERTY_PREFIX + "image", IMAGEPATH as String)
 				// Setting the module.readme property for dockers.
-				// Setting the readme path same as manifest.json for a docker repository 
+				// Setting the readme path same as manifest.json for a docker repository
 				def readmePath = "dockers/"+ filePath.replaceAll("manifest.json", "readme.md")
-				repositories.setProperty(repoPath, PROPERTY_PREFIX + "readme", readmePath as String) 
+				repositories.setProperty(repoPath, PROPERTY_PREFIX + "readme", readmePath as String)
 			}
 		}
 	}
@@ -189,7 +187,7 @@ private String getDownloadPath(repoKey, path , name) {
 	return repoKey + "/" + path + "!" + "/" + name
 }
 
-private void setAppxProperties(str, repoPath) {
+private void setAppxProperties(str, repoPath, id ) {
 
 	def json = new JsonSlurper().parse(str.toCharArray())
 
@@ -205,6 +203,9 @@ private void setAppxProperties(str, repoPath) {
 			else
 				type = 'distribution'
 			repositories.setProperty(repoPath, PROPERTY_PREFIX + "type", type as String)
+		} else if(it.key.equalsIgnoreCase("keywords")) {
+			def keywordList = it.value.toLowerCase() + "," + id.toLowerCase()
+			repositories.setProperty(repoPath, PROPERTY_PREFIX + it.key , keywordList as String)
 		} else
 			repositories.setProperty(repoPath, PROPERTY_PREFIX + it.key, it.value.toLowerCase() as String)
 	}
