@@ -11,14 +11,18 @@ import org.artifactory.fs.FileLayoutInfo
 import org.artifactory.fs.ItemInfo
 import org.artifactory.repo.RepoPath
 import org.artifactory.repo.Repositories
-import org.artifactory.util.ZipUtils
+import org.artifactory.repo.RepoPathFactory
 import org.artifactory.repo.LocalRepositoryConfiguration
 import org.artifactory.addon.AddonsManager;
 import org.artifactory.addon.npm.NpmAddon;
 import org.artifactory.addon.npm.NpmMetadataInfo;
 import org.artifactory.addon.nuget.UiNuGetAddon
 import org.artifactory.nuget.NuMetaData
+import org.artifactory.aql.AqlService
+import org.artifactory.aql.result.rows.AqlBaseFullRowImpl
+import org.artifactory.util.ZipUtils
 
+import groovy.json.JsonBuilder
 import groovy.json.JsonSlurper
 import groovy.transform.Field
 
@@ -64,7 +68,7 @@ storage {
 							repositories.setProperty(repoPath, PROPERTY_PREFIX + propName, id as String)
 						}
 						else if(propName.equals(IMAGE))
-							repositories.setProperty(repoPath, PROPERTY_PREFIX + propName, IMAGEPATH as String)
+							repositories.setProperty(repoPath, PROPERTY_PREFIX + propName, getImagePath(id) as String)
 						else if(propName.equals(BASEREVISION))
 							repositories.setProperty(repoPath, PROPERTY_PREFIX + propName, getMavenVersion(currentLayout, propName) as String)
 						else
@@ -209,4 +213,36 @@ private void setAppxProperties(str, repoPath, id ) {
 		} else
 			repositories.setProperty(repoPath, PROPERTY_PREFIX + it.key, it.value.toLowerCase() as String)
 	}
+}
+
+
+private String getImagePath(id) {
+
+	def names = [ ['@module.name': ['$match': id]], ['@docker.label.team': ['$match': id]] ]
+	def query = ['$or': names]
+	def aql = "items.find(${new JsonBuilder(query).toString()})" +
+			".include(\"*\")"
+	log.info('----aql----'+aql)
+	def flag = false
+	def imagePath = ''
+	try {
+		def aqlserv = ctx.beanForType(AqlService)
+		def queryresults = aqlserv.executeQueryEager(aql).results
+
+		if(queryresults.size() > 0) {
+			flag = true
+			AqlBaseFullRowImpl aqlresult = queryresults.get(0)
+			path = "$aqlresult.path/$aqlresult.name"
+			rpath = RepoPathFactory.create(aqlresult.repo, path)
+	                def properties  = repositories.getProperties(rpath)
+			imagePath = properties.get("module.image").getAt(0)
+		}
+	} catch (Exception e) {
+		log.error("Failed in getImagePath method: " + e.getMessage());
+	}
+
+	if(flag)
+		return imagePath
+	else
+		return IMAGEPATH
 }
