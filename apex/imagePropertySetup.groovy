@@ -12,7 +12,7 @@ executions{
 
 			def aqlserv = ctx.beanForType(AqlService)
 
-			def names = [ ['@module.name': ['$match': module.toLowerCase()]], ['@docker.repoName': ['$match': module.toLowerCase()]] ]
+			def names = [ ['@module.name': ['$match': module]], ['@docker.repoName': ['$match': module]] ]
 			def query = ['$or': names]
 			def aql = "items.find(${new JsonBuilder(query).toString()})" +
 					".include(\"*\")"
