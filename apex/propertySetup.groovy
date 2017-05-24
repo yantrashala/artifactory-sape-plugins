@@ -16,6 +16,9 @@ import org.artifactory.repo.LocalRepositoryConfiguration
 import org.artifactory.addon.AddonsManager;
 import org.artifactory.addon.npm.NpmAddon;
 import org.artifactory.addon.npm.NpmMetadataInfo;
+import org.artifactory.addon.nuget.UiNuGetAddon
+import org.artifactory.nuget.NuMetaData
+
 import groovy.json.JsonSlurper
 import groovy.transform.Field
 

@@ -58,7 +58,7 @@ private HashMap getModuleDetails(aql) {
 			details['lastModifiedOn'] = aqlresult.created.getTime()
 			details['license'] = properties.get("artifactory.licenses").getAt(0) ?: ""
 			details['scm'] = "tools.publicis.sapient.com/bitbucket-code-commons/"
-			details['readme'] =  properties.get("module.readme").getAt(0) ?: "NA"
+			details['readme'] =  properties.get("module.readme").getAt(0)
 			details['gatekeepers'] = properties.get("module.gatekeepers").getAt(0) ?: properties.get("docker.label.gatekeepers").getAt(0) ?: ""
 			details['keywords']= properties.get("module.keywords").getAt(0) ?: properties.get("docker.label.keywords").getAt(0) ?: "NA"
 			details['team']= properties.get("module.team").getAt(0) ?: properties.get("docker.label.team").getAt(0) ?: ""
