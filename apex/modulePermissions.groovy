@@ -25,13 +25,14 @@ import org.artifactory.storage.db.DbService
 import org.artifactory.storage.db.util.JdbcHelper
 import org.artifactory.ui.rest.model.artifacts.browse.treebrowser.tabs.composer.ComposerArtifactInfo
 import org.artifactory.ui.rest.model.artifacts.browse.treebrowser.tabs.nugetinfo.NugetArtifactInfo
-import org.artifactory.addon.sso.ArtifactoryCrowdClient
 import org.artifactory.api.maven.MavenArtifactInfo
 import org.artifactory.addon.npm.NpmAddon
 import groovy.json.JsonBuilder
 import groovy.text.markup.AutoNewLineTransformer
 import groovy.transform.Field
+import org.artifactory.addon.sso.ArtifactoryCrowdClient
 import userdetails
+import propertySetup
 
 @Field JdbcHelper jdbcHelper = ctx.beanForType(JdbcHelper.class)
 @Field InternalRepositoryService repositoryService = ctx.beanForType(InternalRepositoryService.class)
@@ -49,16 +50,16 @@ executions{
 			def successList = []
 			def invalidList = []
 			def existingList = []
+			def pars = params?.getAt("publisher")
 			def artifactoryCrowdClient= ctx.beanForType(ArtifactoryCrowdClient.class);
 			if(!artifactoryCrowdClient.isCrowdAvailable()){
 				throw new Exception("Crowd client is not available")
 			}
-			def pars = params?.getAt("publisher")
 			for (var in pars) {
 				def username = var
 				def modulename = params?.getAt('module').getAt(0)
 				
-				if(validatePublisher(artifactoryCrowdClient,var)){
+				if(validatePublisher(ctx,var)){
 					log.info("username : "+username)
 					log.info("modulename : "+modulename)
 					def result = addPublisher(username,modulename)
@@ -66,10 +67,10 @@ executions{
 					if(result == 1){
 						successList.add(var)
 					}
-					if(result == 0){
+					else if(result == 0){
 						existingList.add(var)
 					}
-					if(result == -1){
+					else if(result == -1){
 						throw new AccessDeniedException(security.getCurrentUsername()+",is not an author for the module"+ modulename+" to provide access")
 						
 					}
@@ -83,14 +84,11 @@ executions{
 			}
 			def str = ""
 			if(successList.size()>0)
-				//json["Successfully added publishers"] = successList
-				str += "Successfully added publishers : "+ successList + "\\n"
+				str += "Successfully added publishers : "+ successList + "|"
 			if(invalidList.size()>0)
-				//json["Invalid publisher names"] = invalidList
-				str += "Invalid publisher names : "+ invalidList + "\\n"
+				str += "Invalid publisher names : "+ invalidList + "|"
 			if(existingList.size()>0)
-				//json["Existing publisher names"] = existingList
-				str += "Successfully added publishers : "+ existingList + "\\n"
+				str += "Already Existing publishers : "+ existingList + "|"
 			
 			
 			message = new JsonBuilder(str).toPrettyString()
@@ -123,21 +121,22 @@ executions{
 					int result = removePublisher(username,modulename)
 					if(result == 1)
 						successList.add(var)
-					if(result == 0)
+					else if(result == 0)
 						doesntexistList.add(var)
 				}else{
 					invalidList.add(var)
 				}
 				
 			}
+			def str = ""
 			if(successList.size()>0)
-				json["Successfully removed publishers"] = successList
+				str += "Successfully removed publishers : " +successList+ "|"
 			if(invalidList.size()>0)
-				json["Invalid publisher names"] = invalidList
+				str += "Invalid publisher names : "+ invalidList+ "|"
 			if(doesntexistList.size()>0)
-				json["Existing publisher names"] = doesntexistList
+				str += "permission doesnt exist : "+ doesntexistList+ "|"
 			json['results'] = response;
-			message = new JsonBuilder(json).toPrettyString()
+			message = new JsonBuilder(str).toPrettyString()
 			status = 200
 		}catch (e) {
 			log.error 'Failed to execute plugin', e
@@ -149,12 +148,10 @@ executions{
 public boolean validatePublisher(InternalArtifactoryContext  ctx,String userId){
 	boolean isValidUser =  true
 	def userDetails = new userdetails()
-	
-		def userInfo  = userDetails.getUserInfofromNtId(ctx, userId)
-		if(userInfo.get("displayName")==null){
-			isValidUser = false
-		}
-	
+	def userInfo  = userDetails.getUserInfofromNtId(ctx, userId)
+	if(userInfo.get("displayName")==null){
+		isValidUser = false
+	}
 	return isValidUser
 }
 
@@ -204,6 +201,7 @@ public int addPublisher(String username,String modulename){
 public void createPermissionForCurrentBuild(ItemInfo item){
 	def repoPath =  item.getRepoPath()
 	def repoKey =  item.getRepoKey()
+	def propertySetup = new propertySetup()
 	if(repoPath.isFile()) {
 		def filePath = repoPath.path.toLowerCase()
 		LocalRepositoryConfiguration repoConfig = repositories.getRepositoryConfiguration(repoPath.repoKey)
@@ -213,19 +211,19 @@ public void createPermissionForCurrentBuild(ItemInfo item){
 			def key = item.repoKey
 			FileLayoutInfo currentLayout = repositories.getLayoutInfo(repoPath)
 			if(currentLayout.isValid()){
-				def artifactInfo  = getMavenInfo(repoPath)
+				def artifactInfo  = propertySetup.getMavenInfo(repoPath)
 				artId = artifactInfo.getArtifactId()
 			}
 			if(repoConfig.getPackageType().equalsIgnoreCase("Npm")){
-				def npmInfo = getNPMInfo(repoPath)
+				def npmInfo = propertySetup.getNPMInfo(repoPath)
 				artId = npmInfo.getName()
 			}
 			if(repoConfig.getPackageType().equalsIgnoreCase("NuGet")){
-				def nugetInfo = getNugetInfo(repoPath)
+				def nugetInfo = propertySetup.getNugetInfo(repoPath)
 				artId = nugetInfo.getId()
 			}
 			if(repoConfig.getPackageType().equalsIgnoreCase("Composer")){
-				def composerInfo = getComposerInfo(repoPath)
+				def composerInfo = propertySetup.getComposerInfo(repoPath)
 				artId = composerInfo.getName()
 			}
 			validatePublish(artId)
@@ -270,40 +268,3 @@ private int createPermission(String modulename,String user_id,String authorizedB
 			modulename,user_id,authorizedBy,System.currentTimeMillis())
 }
 
-public MavenArtifactInfo getMavenInfo(RepoPath repoPath){
-	return MavenArtifactInfo.fromRepoPath(repoPath)
-}
-
-public NpmInfo getNPMInfo(RepoPath repoPath){
-	AddonsManager addonsManager = ContextHelper.get().beanForType(AddonsManager.class)
-	NpmAddon npmAddon = addonsManager.addonByType(NpmAddon.class)
-	NpmInfo npmInfo = null
-	if (npmAddon != null) {
-		// get npm meta data
-		NpmMetadataInfo npmMetaDataInfo = npmAddon.getNpmMetaDataInfo(repoPath)
-		npmInfo =  npmMetaDataInfo.getNpmInfo()
-	}
-	return npmInfo
-}
-
-public NuMetaData getNugetInfo(RepoPath repoPath){
-	AddonsManager addonsManager = ContextHelper.get().beanForType(AddonsManager.class);
-	UiNuGetAddon uiNuGetAddon = addonsManager.addonByType(UiNuGetAddon.class)
-	NuMetaData nugetSpecMetaData = null
-	if (uiNuGetAddon != null) {
-		nugetSpecMetaData = uiNuGetAddon.getNutSpecMetaData(repoPath);
-		def id = nugetSpecMetaData.getId()
-		log.debug("Nuget Id : "+id)
-	}
-	return nugetSpecMetaData
-}
-public ComposerInfo getComposerInfo(RepoPath repoPath){
-	AddonsManager addonsManager = ContextHelper.get().beanForType(AddonsManager.class)
-	ComposerAddon composerAddon = addonsManager.addonByType(ComposerAddon.class)
-	def composerInfo = null
-	if(composerAddon != null ){
-		ComposerMetadataInfo composerMetadataInfo =  composerAddon.getComposerMetadataInfo(repoPath)
-		composerInfo = composerMetadataInfo.getComposerInfo()
-	}
-	return composerInfo
-}
