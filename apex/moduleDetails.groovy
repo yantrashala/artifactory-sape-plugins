@@ -3,13 +3,15 @@ import org.artifactory.aql.AqlService
 import org.artifactory.aql.result.rows.AqlBaseFullRowImpl
 import org.artifactory.repo.RepoPathFactory
 import org.artifactory.spring.InternalArtifactoryContext
+import org.artifactory.api.context.ContextHelper
 import org.artifactory.api.module.ModuleInfoUtils
+import org.artifactory.api.repo.RepositoryService
 import org.artifactory.ui.rest.model.artifacts.browse.treebrowser.tabs.general.dependecydeclaration.DependencyDeclaration
 import org.artifactory.util.RepoLayoutUtils
 import org.artifactory.spring.InternalArtifactoryContext
 import org.artifactory.repo.RepoPath
 import org.artifactory.repo.LocalRepositoryConfiguration
-
+import org.artifactory.fs.StatsInfo
 executions{
 	moduledetails(httpMethod: 'GET', groups : 'users'){ params ->
 
@@ -57,7 +59,8 @@ private HashMap getModuleDetails(aql) {
 			// Getting the properties for the required module name
 			def properties  = repositories.getProperties(rpath)
 			def moduleName = properties.get("module.name").getAt(0) ?: properties.get("docker.repoName").getAt(0)
-
+			def downloadCount = getMoudleDownloadCount(rpath)
+			
 			details['name'] = moduleName
 			details['version'] = properties.get("npm.version").getAt(0)?: properties.get("composer.version").getAt(0) ?:
 						properties.get("module.baseRevision").getAt(0) ?: properties.get("docker.label.version").getAt(0) ?: "NA"
@@ -75,6 +78,7 @@ private HashMap getModuleDetails(aql) {
 			details['type']= properties.get("module.type").getAt(0) ?: properties.get("docker.label.type").getAt(0) ?: ""
 			details['description'] = properties.get("npm.description").getAt(0) ?: properties.get("module.description").getAt(0) ?: properties.get("composer.description").getAt(0) ?: properties.get("docker.label.description").getAt(0) ?: ""
 			details['versionHistory'] = getVersionHistory(moduleName)
+			details['downloadCount'] = downloadCount
 			details['repokey'] = rpath.getRepoKey()
 			details['download'] = fullPath
 			if(rpath.getRepoKey().equals("maven-release")||rpath.getRepoKey().equals("maven-snapshot")){
@@ -133,4 +137,13 @@ private List getVersionHistory(module) {
 		status = 500
 	}
 	return results
+}
+private long getMoudleDownloadCount(RepoPath repoPath){
+	long count = 0
+	RepositoryService repoService = ContextHelper.get().beanForType(RepositoryService.class)
+	if(repoService!=null){
+		StatsInfo statsInfo = repoService.getStatsInfo(repoPath)
+		count = statsInfo.getDownloadCount()
+	}
+	return count
 }
