@@ -2,6 +2,9 @@ import java.nio.file.AccessDeniedException
 import java.sql.ResultSet
 import org.artifactory.util.AlreadyExistsException
 import org.artifactory.util.ZipUtils
+
+import com.atlassian.crowd.service.client.CrowdClient
+
 import org.artifactory.addon.AddonsManager
 import org.artifactory.addon.composer.ComposerAddon
 import org.artifactory.addon.composer.ComposerInfo
@@ -51,15 +54,18 @@ executions{
 			def invalidList = []
 			def existingList = []
 			def pars = params?.getAt("publisher")
-			def artifactoryCrowdClient= ctx.beanForType(ArtifactoryCrowdClient.class);
-			if(!artifactoryCrowdClient.isCrowdAvailable()){
+			def artifactoryCrowdClient= ctx.beanForType(ArtifactoryCrowdClient.class)
+			def crowdClient= null
+			if(artifactoryCrowdClient != null && !artifactoryCrowdClient.isCrowdAvailable()){
 				throw new Exception("Crowd client is not available")
+			}else{
+				crowdClient = artifactoryCrowdClient.getHttpAuthenticator().getClient()
 			}
 			for (var in pars) {
 				def username = var
 				def modulename = params?.getAt('module').getAt(0)
-				
-				if(validatePublisher(ctx,var)){
+
+				if(validatePublisher(crowdClient,var)){
 					log.info("username : "+username)
 					log.info("modulename : "+modulename)
 					def result = addPublisher(username,modulename)
@@ -109,15 +115,18 @@ executions{
 			def invalidList = []
 			def doesntexistList = []
 			def artifactoryCrowdClient= ctx.beanForType(ArtifactoryCrowdClient.class);
-			if(!artifactoryCrowdClient.isCrowdAvailable()){
+			def crowdClient= null
+			if(artifactoryCrowdClient != null && !artifactoryCrowdClient.isCrowdAvailable()){
 				throw new Exception("Crowd client is not available")
+			}else{
+				crowdClient = artifactoryCrowdClient.getHttpAuthenticator().getClient()
 			}
 			String response = ""
 			def pars = params?.getAt('remove')
 			for(var in pars){
 				def username = var
 				def modulename = params?.getAt('module').getAt(0)
-				if(validatePublisher(ctx,var)){
+				if(validatePublisher(crowdClient,var)){
 					int result = removePublisher(username,modulename)
 					if(result == 1)
 						successList.add(var)
@@ -145,10 +154,10 @@ executions{
 		}
 	}
 }
-public boolean validatePublisher(InternalArtifactoryContext  ctx,String userId){
+public boolean validatePublisher(CrowdClient crowdClient,String userId){
 	boolean isValidUser =  true
 	def userDetails = new userdetails()
-	def userInfo  = userDetails.getUserInfofromNtId(ctx, userId)
+	def userInfo  = userDetails.getUserInfofromNtId(crowdClient, userId)
 	if(userInfo.get("displayName")==null){
 		isValidUser = false
 	}
