@@ -69,7 +69,6 @@ executions{
 					log.info("username : "+username)
 					log.info("modulename : "+modulename)
 					def result = addPublisher(username,modulename)
-					log.info("this is result "+result)
 					if(result == 1){
 						successList.add(var)
 					}
@@ -132,6 +131,8 @@ executions{
 						successList.add(var)
 					else if(result == 0)
 						doesntexistList.add(var)
+					else if(result == -1)
+						throw new AccessDeniedException(security.getCurrentUsername()+",is not an author for the module"+ modulename+" to remove access")
 				}else{
 					invalidList.add(var)
 				}
@@ -175,6 +176,8 @@ public int removePublisher(String username,String modulename){
 		if(currentUser.equalsIgnoreCase(result.getString("user_id"))){
 			response = removePermission(modulename,username)
 			break
+		}else{
+			response = -1
 		}
 	}
 	return response
@@ -196,13 +199,10 @@ public int addPublisher(String username,String modulename){
 	}
 	if(isAuthor && !isPublisher){
 		response = createPermission(modulename,username,currentUser)
-		log.info("if : "+response)
 	}else if(isAuthor && isPublisher){
 		response = 0
-		log.info("else if: "+response)
 	}else{
 		response = -1
-		log.info("else : "+response)
 	}
 	return response
 }
@@ -260,7 +260,7 @@ private void validatePublish(String moduleName){
 			log.info("New permission created for the module")
 	}
 	if(!isAuthorized){
-		log.info("user is not authorized to publish a latest module")
+		
 		throw new UnauthorizedException("User is not Authorized to do a publish")
 	}
 }
