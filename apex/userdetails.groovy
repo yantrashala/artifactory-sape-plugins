@@ -1,8 +1,10 @@
 import groovy.json.JsonBuilder
 
 import org.artifactory.addon.sso.ArtifactoryCrowdClient
+import org.artifactory.spring.InternalArtifactoryContext
 import com.atlassian.crowd.search.builder.Restriction
 import com.atlassian.crowd.search.query.entity.restriction.PropertyImpl
+import com.atlassian.crowd.service.client.CrowdClient
 
 
 executions{
@@ -15,23 +17,13 @@ executions{
 			def artifactoryCrowdClient= ctx.beanForType(ArtifactoryCrowdClient.class);
 			if(artifactoryCrowdClient.isCrowdAvailable()) {
 				def crowdClient = artifactoryCrowdClient.getHttpAuthenticator().getClient();
-				def usersList = []
-				def userEntity
 				def json = [:]
 				if(username != null){			
-					userEntity = crowdClient.getUser(username);
-					json['displayName'] = userEntity.getDisplayName()
-					json['emailId'] = userEntity.getEmailAddress()
-					json['loginID'] = userEntity.getName()
+					json = getUserInfofromNtId(crowdClient,username)
 				}
 				if(email != null && username == null){
-					def emailProperty = new PropertyImpl("email", String.class)
-					def emailRestriction = Restriction.on(emailProperty).exactlyMatching(email)
-					usersList = crowdClient.searchUsers(emailRestriction ,0,1)
+					json = getUserInfofromEmail(crowdClient,email)
 					
-					json['displayName'] = usersList.size() > 0 ? usersList.getAt(0).getDisplayName() : email
-					json['emailId'] = usersList.size() > 0 ? usersList.getAt(0).getEmailAddress() : email
-					json['loginID'] = usersList.size() > 0 ? usersList.getAt(0).getName() : email
 				}
 				
 				message = new JsonBuilder(json).toPrettyString()
@@ -49,4 +41,22 @@ executions{
 	}
 }
 
+public Map getUserInfofromNtId(CrowdClient  crowdClient,String ntid){
+	def userInfo = [:]
+	def userEntity = crowdClient.getUser(ntid);
+	userInfo['displayName'] = userEntity.getDisplayName()
+	userInfo['emailId'] = userEntity.getEmailAddress()
+	userInfo['loginID'] = userEntity.getName()
+	return userInfo
+}
+public Map getUserInfofromEmail(CrowdClient  crowdClient,String email){
+	def userInfo = [:]
+	def emailProperty = new PropertyImpl("email", String.class)
+	def emailRestriction = Restriction.on(emailProperty).exactlyMatching(email)
+	def usersList = crowdClient.searchUsers(emailRestriction,0,1)
+	userInfo['displayName'] = usersList.size() > 0 ? usersList.getAt(0).getDisplayName() : email
+	userInfo['emailId'] = usersList.size() > 0 ? usersList.getAt(0).getEmailAddress() : email
+	userInfo['loginID'] = usersList.size() > 0 ? usersList.getAt(0).getName() : email
 
+	return userInfo
+}

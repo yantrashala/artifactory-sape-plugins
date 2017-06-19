@@ -6,6 +6,7 @@ import org.apache.commons.compress.archivers.tar.TarArchiveInputStream
 import org.apache.commons.compress.archivers.zip.ZipArchiveInputStream
 import org.apache.commons.compress.compressors.gzip.GzipCompressorInputStream
 import org.artifactory.api.context.ContextHelper
+import org.artifactory.api.maven.MavenArtifactInfo
 import org.artifactory.api.repo.RepositoryService
 import org.artifactory.fs.FileLayoutInfo
 import org.artifactory.fs.ItemInfo
@@ -14,14 +15,17 @@ import org.artifactory.repo.Repositories
 import org.artifactory.repo.RepoPathFactory
 import org.artifactory.repo.LocalRepositoryConfiguration
 import org.artifactory.addon.AddonsManager;
+import org.artifactory.addon.composer.ComposerInfo
 import org.artifactory.addon.npm.NpmAddon;
+import org.artifactory.addon.npm.NpmInfo
 import org.artifactory.addon.npm.NpmMetadataInfo;
 import org.artifactory.addon.nuget.UiNuGetAddon
 import org.artifactory.nuget.NuMetaData
 import org.artifactory.aql.AqlService
 import org.artifactory.aql.result.rows.AqlBaseFullRowImpl
 import org.artifactory.util.ZipUtils
-
+import org.artifactory.addon.composer.ComposerAddon
+import org.artifactory.addon.composer.ComposerMetadataInfo
 import groovy.json.JsonBuilder
 import groovy.json.JsonSlurper
 import groovy.transform.Field
@@ -54,16 +58,21 @@ storage {
 					LocalRepositoryConfiguration repoConfig = repositories.getRepositoryConfiguration(repoPath.repoKey)
 					['organization', 'name', 'baseRevision', 'ext', 'image'].each { String propName ->
 						if(propName.equals(NAME)){
-							if (currentLayout.isValid()){
-								id = currentLayout.module
+							if(currentLayout.isValid()){
+								def artifactInfo  = getMavenInfo(repoPath)
+								id = artifactInfo.getArtifactId()
 							}
-							else if (repoConfig.getPackageType().equalsIgnoreCase("Npm") ||
-								repoConfig.getPackageType().equalsIgnoreCase("Composer")){
-								log.debug("package type : "+repoConfig.getPackageType())
-								id = getModuleName(repoService, repoPath)
+							if(repoConfig.getPackageType().equalsIgnoreCase("Npm")){
+								def npmInfo = getNPMInfo(repoPath)
+								id = npmInfo.getName()
 							}
-							else if(repoConfig.getPackageType().equalsIgnoreCase("NuGet")){
-								id = getNugetModuleName(repoService, repoPath)
+							if(repoConfig.getPackageType().equalsIgnoreCase("NuGet")){
+								def nugetInfo = getNugetInfo(repoPath)
+								id = nugetInfo.getId()
+							}
+							if(repoConfig.getPackageType().equalsIgnoreCase("Composer")){
+								def composerInfo = getComposerInfo(repoPath)
+								id = composerInfo.getName()
 							}
 							repositories.setProperty(repoPath, PROPERTY_PREFIX + propName, id as String)
 						}
@@ -149,27 +158,6 @@ private String getModuleName(repoService, repoPath) {
 	return id
 }
 
-private String getNugetModuleName(repoService,repoPath) {
-	def id = ""
-	ArchiveInputStream archiveInputStream1 = repoService.archiveInputStream(repoPath)
-	ArchiveEntry archiveEntry1;
-
-	while((archiveEntry1 = archiveInputStream1.getNextEntry()) != null){
-		if(archiveEntry1.name.toLowerCase().endsWith("nuspec")){
-			AddonsManager addonsManager = ContextHelper.get().beanForType(AddonsManager.class);
-			UiNuGetAddon uiNuGetAddon = addonsManager.addonByType(UiNuGetAddon.class);
-			if (uiNuGetAddon != null) {
-				NuMetaData nugetSpecMetaData = uiNuGetAddon.getNutSpecMetaData(repoPath);
-				id = nugetSpecMetaData.getId()
-				log.debug("Nuget Id : "+id)
-
-			}
-		}
-
-	}
-	return id;
-}
-
 private String getMavenVersion(currentLayout, propName) {
 	if(currentLayout.folderIntegrationRevision.equals(SNAPSHOT))
 		return currentLayout."$propName" + '-' + SNAPSHOT
@@ -245,4 +233,42 @@ private String getImagePath(id) {
 		return imagePath
 	else
 		return IMAGEPATH
+}
+
+public MavenArtifactInfo getMavenInfo(RepoPath repoPath){
+	return MavenArtifactInfo.fromRepoPath(repoPath)
+}
+
+public NpmInfo getNPMInfo(RepoPath repoPath){
+	AddonsManager addonsManager = ContextHelper.get().beanForType(AddonsManager.class)
+	NpmAddon npmAddon = addonsManager.addonByType(NpmAddon.class)
+	NpmInfo npmInfo = null
+	if (npmAddon != null) {
+		// get npm meta data
+		NpmMetadataInfo npmMetaDataInfo = npmAddon.getNpmMetaDataInfo(repoPath)
+		npmInfo =  npmMetaDataInfo.getNpmInfo()
+	}
+	return npmInfo
+}
+
+public NuMetaData getNugetInfo(RepoPath repoPath){
+	AddonsManager addonsManager = ContextHelper.get().beanForType(AddonsManager.class);
+	UiNuGetAddon uiNuGetAddon = addonsManager.addonByType(UiNuGetAddon.class)
+	NuMetaData nugetSpecMetaData = null
+	if (uiNuGetAddon != null) {
+		nugetSpecMetaData = uiNuGetAddon.getNutSpecMetaData(repoPath);
+		def id = nugetSpecMetaData.getId()
+		log.debug("Nuget Id : "+id)
+	}
+	return nugetSpecMetaData
+}
+public ComposerInfo getComposerInfo(RepoPath repoPath){
+	AddonsManager addonsManager = ContextHelper.get().beanForType(AddonsManager.class)
+	ComposerAddon composerAddon = addonsManager.addonByType(ComposerAddon.class)
+	def composerInfo = null
+	if(composerAddon != null ){
+		ComposerMetadataInfo composerMetadataInfo =  composerAddon.getComposerMetadataInfo(repoPath)
+		composerInfo = composerMetadataInfo.getComposerInfo()
+	}
+	return composerInfo
 }
