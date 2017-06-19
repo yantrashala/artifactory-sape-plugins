@@ -2,7 +2,16 @@ import groovy.json.JsonBuilder
 import org.artifactory.aql.AqlService
 import org.artifactory.aql.result.rows.AqlBaseFullRowImpl
 import org.artifactory.repo.RepoPathFactory
-
+import org.artifactory.spring.InternalArtifactoryContext
+import org.artifactory.api.context.ContextHelper
+import org.artifactory.api.module.ModuleInfoUtils
+import org.artifactory.api.repo.RepositoryService
+import org.artifactory.ui.rest.model.artifacts.browse.treebrowser.tabs.general.dependecydeclaration.DependencyDeclaration
+import org.artifactory.util.RepoLayoutUtils
+import org.artifactory.spring.InternalArtifactoryContext
+import org.artifactory.repo.RepoPath
+import org.artifactory.repo.LocalRepositoryConfiguration
+import org.artifactory.fs.StatsInfo
 executions{
 	moduledetails(httpMethod: 'GET', groups : 'users'){ params ->
 
@@ -45,15 +54,19 @@ private HashMap getModuleDetails(aql) {
 
 			path = "$aqlresult.path/$aqlresult.name"
 			rpath = RepoPathFactory.create(aqlresult.repo, path)
-
+			String fullPath = rpath.getRepoKey()+"/"+rpath.getPath()
+			LocalRepositoryConfiguration repoConfig = repositories.getRepositoryConfiguration(rpath.getRepoKey())
 			// Getting the properties for the required module name
 			def properties  = repositories.getProperties(rpath)
 			def moduleName = properties.get("module.name").getAt(0) ?: properties.get("docker.repoName").getAt(0)
-
+			def downloadCount = getMoudleDownloadCount(rpath)
+			
 			details['name'] = moduleName
 			details['version'] = properties.get("npm.version").getAt(0)?: properties.get("composer.version").getAt(0) ?:
 						properties.get("module.baseRevision").getAt(0) ?: properties.get("docker.label.version").getAt(0) ?: "NA"
 			details['image'] = properties.get("module.image").getAt(0) ?: "NA"
+			if(properties.get("module.organization").getAt(0)!= null )
+				details['organization'] = properties.get("module.organization").getAt(0)
 			details['publisher'] = aqlresult.getModifiedBy()
 			details['lastModifiedOn'] = aqlresult.created.getTime()
 			details['license'] = properties.get("artifactory.licenses").getAt(0) ?: ""
@@ -65,7 +78,20 @@ private HashMap getModuleDetails(aql) {
 			details['type']= properties.get("module.type").getAt(0) ?: properties.get("docker.label.type").getAt(0) ?: ""
 			details['description'] = properties.get("npm.description").getAt(0) ?: properties.get("module.description").getAt(0) ?: properties.get("composer.description").getAt(0) ?: properties.get("docker.label.description").getAt(0) ?: ""
 			details['versionHistory'] = getVersionHistory(moduleName)
-		}
+			details['downloadCount'] = downloadCount
+			details['repokey'] = rpath.getRepoKey()
+			details['download'] = fullPath
+			if(rpath.getRepoKey().equals("maven-release")||rpath.getRepoKey().equals("maven-snapshot")){
+				String mavenDependency = getRepoLayout(ctx,rpath)
+				details['dependency'] = mavenDependency
+			}	
+			if(rpath.getRepoKey().equals("npm-release")|| rpath.getRepoKey().equals("npm-alpha"))
+				details['dependency'] = "npm install "+moduleName
+			if(rpath.getRepoKey().equals("php-release"))
+				details['dependency'] = "composer install "+moduleName
+			if(rpath.getRepoKey().equals("nuget-release"))
+				details['dependency'] = "Install-Package "+moduleName
+		}	
 
 	} catch (e) {
 		log.error 'Failed to execute getModuleDetails method in moduleDetails plugin', e
@@ -74,7 +100,15 @@ private HashMap getModuleDetails(aql) {
 	}
 	return details
 }
-
+private String getRepoLayout(InternalArtifactoryContext  ctx,RepoPath repopath){
+	String fullPath = repopath.getRepoKey()+"/"+repopath.getPath()
+	def repoLayout = null
+	if(repopath.getRepoKey().equals("maven-release") || repopath.getRepoKey().equals("maven-snapshot"))
+		repoLayout  = ctx.getCentralConfig().getDescriptor().getRepoLayout(RepoLayoutUtils.MAVEN_2_DEFAULT_NAME)
+	def moduleInfo = ModuleInfoUtils.moduleInfoFromArtifactPath(fullPath,repoLayout)
+	String mavenDependency = new DependencyDeclaration().getMavenDependencyDeclaration(moduleInfo)
+	return mavenDependency
+}
 private List getVersionHistory(module) {
 	// To get the version history for the given module, so firing a query to get all the versions
 	def moduleNames = [ ['@module.name': ['$match': module]], ['@docker.repoName': ['$match': module]] ]
@@ -105,4 +139,13 @@ private List getVersionHistory(module) {
 		status = 500
 	}
 	return results
+}
+private long getMoudleDownloadCount(RepoPath repoPath){
+	long count = 0
+	RepositoryService repoService = ContextHelper.get().beanForType(RepositoryService.class)
+	if(repoService!=null){
+		StatsInfo statsInfo = repoService.getStatsInfo(repoPath)
+		count = statsInfo.getDownloadCount()
+	}
+	return count
 }
