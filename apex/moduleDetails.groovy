@@ -89,6 +89,8 @@ private HashMap getModuleDetails(aql) {
 				details['dependency'] = "npm install "+moduleName
 			if(rpath.getRepoKey().equals("php-release"))
 				details['dependency'] = "composer install "+moduleName
+			if(rpath.getRepoKey().equals("nuget-release"))
+				details['dependency'] = "Install-Package "+moduleName
 		}	
 
 	} catch (e) {
