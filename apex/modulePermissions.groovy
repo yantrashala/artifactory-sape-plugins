@@ -25,6 +25,7 @@ import org.artifactory.rest.common.exception.UnauthorizedException
 import org.artifactory.sapi.fs.MutableVfsFile
 import org.artifactory.spring.InternalArtifactoryContext
 import org.artifactory.storage.db.DbService
+import org.artifactory.storage.db.util.DbUtils
 import org.artifactory.storage.db.util.JdbcHelper
 import org.artifactory.ui.rest.model.artifacts.browse.treebrowser.tabs.composer.ComposerArtifactInfo
 import org.artifactory.ui.rest.model.artifacts.browse.treebrowser.tabs.nugetinfo.NugetArtifactInfo
@@ -239,29 +240,39 @@ public void createPermissionForCurrentBuild(ItemInfo item){
 		}
 	}
 }
+/*
+* ResultSet closed only for validatePublish method as this is the only method which calls jdbcHelper's
+* executeSelect method alone.executeSelect method won't close the DB connection untill and unless
+* an exception was thrown
+*/
 
 private void validatePublish(String moduleName){
-	def result = getModulePermission(moduleName)
-	String currentUser = security.getCurrentUsername()
-	boolean isAuthorized = false
-	boolean isFirstPublish = true
-	while(result.next()){
-		isFirstPublish = false
-		String username = result.getString("user_id")
-		if(username.equalsIgnoreCase(currentUser)){
-			isAuthorized = true
-			break
+	def result = null
+	try{
+		result = getModulePermission(moduleName)
+		String currentUser = security.getCurrentUsername()
+		boolean isAuthorized = false
+		boolean isFirstPublish = true
+		while(result.next()){
+			isFirstPublish = false
+			String username = result.getString("user_id")
+			if(username.equalsIgnoreCase(currentUser)){
+				isAuthorized = true
+				break
+			}
 		}
-	}
-	if(isFirstPublish){
-		isAuthorized = true
-		int success = createPermission(moduleName,currentUser,null)
-		if(success==1)
-			log.info("New permission created for the module")
-	}
-	if(!isAuthorized){
-		
-		throw new UnauthorizedException("User is not Authorized to do a publish")
+		if(isFirstPublish){
+			isAuthorized = true
+			int success = createPermission(moduleName,currentUser,null)
+			if(success==1)
+				log.info("New permission created for the module")
+		}
+		if(!isAuthorized){
+			throw new UnauthorizedException("User is not Authorized to do a publish")
+		}
+	}finally{
+		if(result)
+			DbUtils.close(result)
 	}
 }
 
