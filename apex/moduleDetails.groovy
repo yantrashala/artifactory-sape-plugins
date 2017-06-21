@@ -59,7 +59,7 @@ private HashMap getModuleDetails(aql) {
 			// Getting the properties for the required module name
 			def properties  = repositories.getProperties(rpath)
 			def moduleName = properties.get("module.name").getAt(0) ?: properties.get("docker.repoName").getAt(0)
-			def downloadCount = getMoudleDownloadCount(rpath)
+			def downloadCount = getModuleDownloadCount(rpath)
 			
 			details['name'] = moduleName
 			details['version'] = properties.get("npm.version").getAt(0)?: properties.get("composer.version").getAt(0) ?:
@@ -140,7 +140,7 @@ private List getVersionHistory(module) {
 	}
 	return results
 }
-private long getMoudleDownloadCount(RepoPath repoPath){
+private long getModuleDownloadCount(RepoPath repoPath){
 	long count = 0
 	RepositoryService repoService = ContextHelper.get().beanForType(RepositoryService.class)
 	if(repoService !=null & repoService.getStatsInfo(repoPath)!=null){
