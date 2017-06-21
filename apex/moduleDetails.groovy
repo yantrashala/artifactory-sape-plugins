@@ -81,15 +81,15 @@ private HashMap getModuleDetails(aql) {
 			details['downloadCount'] = downloadCount
 			details['repokey'] = rpath.getRepoKey()
 			details['download'] = fullPath
-			if(rpath.getRepoKey().equals("maven-release")||rpath.getRepoKey().equals("maven-snapshot")){
+			if(repoConfig.getPackageType().equals("Maven")){
 				String mavenDependency = getRepoLayout(ctx,rpath)
 				details['dependency'] = mavenDependency
 			}	
-			if(rpath.getRepoKey().equals("npm-release")|| rpath.getRepoKey().equals("npm-alpha"))
+			else if(repoConfig.getPackageType().equalsIgnoreCase("Npm"))
 				details['dependency'] = "npm install "+moduleName
-			if(rpath.getRepoKey().equals("php-release"))
+			else if(repoConfig.getPackageType().equalsIgnoreCase("Composer"))
 				details['dependency'] = "composer install "+moduleName
-			if(rpath.getRepoKey().equals("nuget-release"))
+			else if(repoConfig.getPackageType().equalsIgnoreCase("NuGet"))
 				details['dependency'] = "Install-Package "+moduleName
 		}	
 
@@ -101,11 +101,11 @@ private HashMap getModuleDetails(aql) {
 	return details
 }
 private String getRepoLayout(InternalArtifactoryContext  ctx,RepoPath repopath){
-	String fullPath = repopath.getRepoKey()+"/"+repopath.getPath()
+	String itemPath = repopath.getPath()
 	def repoLayout = null
 	if(repopath.getRepoKey().equals("maven-release") || repopath.getRepoKey().equals("maven-snapshot"))
 		repoLayout  = ctx.getCentralConfig().getDescriptor().getRepoLayout(RepoLayoutUtils.MAVEN_2_DEFAULT_NAME)
-	def moduleInfo = ModuleInfoUtils.moduleInfoFromArtifactPath(fullPath,repoLayout)
+	def moduleInfo = ModuleInfoUtils.moduleInfoFromArtifactPath(itemPath,repoLayout)
 	String mavenDependency = new DependencyDeclaration().getMavenDependencyDeclaration(moduleInfo)
 	return mavenDependency
 }
@@ -143,7 +143,7 @@ private List getVersionHistory(module) {
 private long getMoudleDownloadCount(RepoPath repoPath){
 	long count = 0
 	RepositoryService repoService = ContextHelper.get().beanForType(RepositoryService.class)
-	if(repoService!=null){
+	if(repoService !=null & repoService.getStatsInfo(repoPath)!=null){
 		StatsInfo statsInfo = repoService.getStatsInfo(repoPath)
 		count = statsInfo.getDownloadCount()
 	}
