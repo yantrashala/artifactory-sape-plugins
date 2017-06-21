@@ -81,7 +81,7 @@ private HashMap getModuleDetails(aql) {
 			details['downloadCount'] = downloadCount
 			details['repokey'] = rpath.getRepoKey()
 			details['download'] = fullPath
-			if(repoConfig.getPackageType().equals("Maven")){
+			if(repoConfig.getPackageType().equalsIgnoreCase("Maven")){
 				String mavenDependency = getRepoLayout(ctx,rpath)
 				details['dependency'] = mavenDependency
 			}	
