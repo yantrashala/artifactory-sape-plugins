@@ -88,6 +88,8 @@ def getStats(JdbcHelper jdbcHelper, query ) {
 		   		results += row
 		    }
 	    }
+	} catch (ex) {
+		results = []; 
 	} finally {
 		// close the result set
 	    if (rs) DbUtils.close(rs)
