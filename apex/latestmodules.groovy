@@ -33,7 +33,8 @@ private List getResult(aql) {
 		def aqlserv = ctx.beanForType(AqlService)
 		def queryresults = aqlserv.executeQueryEager(aql).results
 		log.info("result set size  "+queryresults.size())
-
+		def details = [:]
+		def checkResult = [:]
 		for (AqlBaseFullRowImpl var in queryresults) {
 			log.info("this is reppo path : "+var.path)
 			path = "$var.path/$var.name"
@@ -42,13 +43,18 @@ private List getResult(aql) {
 			log.info("this is reppo path : "+var.path)
 
 			if(!properties.isEmpty()){
-				def details = [:]
-				details['name'] =  properties.get("module.name").getAt(0) ?: properties.get("docker.repoName").getAt(0)
-				details['version'] = properties.get("npm.version").getAt(0) ?: properties.get("composer.version").getAt(0) ?: properties.get("module.baseRevision").getAt(0) ?: properties.get("docker.label.version").getAt(0) ?: "NA"
-				details['image'] = properties.get("module.image").getAt(0) ?: ""
-				details['team']= properties.get("module.team").getAt(0) ?: properties.get("docker.label.team").getAt(0) ?: ""
-				details['description'] = properties.get("npm.description").getAt(0) ?: properties.get("module.description").getAt(0)  ?: properties.get("composer.description").getAt(0) ?: properties.get("docker.label.description").getAt(0) ?: ""
-				list.add(details)
+				def moduleName = properties.get("module.name").getAt(0) ?: properties.get("docker.repoName").getAt(0)
+				if(!checkResult.containsKey(moduleName)){
+					details = new HashMap()
+					details['name'] =  properties.get("module.name").getAt(0) ?: properties.get("docker.repoName").getAt(0)
+					details['version'] = properties.get("npm.version").getAt(0) ?: properties.get("composer.version").getAt(0) ?: properties.get("module.baseRevision").getAt(0) ?: properties.get("docker.label.version").getAt(0) ?: "NA"
+					details['image'] = properties.get("module.image").getAt(0) ?: ""
+					details['team']= properties.get("module.team").getAt(0) ?: properties.get("docker.label.team").getAt(0) ?: ""
+					details['description'] = properties.get("npm.description").getAt(0) ?: properties.get("module.description").getAt(0)  ?: properties.get("composer.description").getAt(0) ?: properties.get("docker.label.description").getAt(0) ?: ""
+					details['repokey']=var.getRepo()
+					checkResult[moduleName] = details
+					list.add(details)
+				}
 			}
 		}
 	} catch (e) {
