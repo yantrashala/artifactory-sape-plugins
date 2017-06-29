@@ -60,17 +60,20 @@ storage {
 						if(propName.equals(NAME)){
 							if(currentLayout.isValid()){
 								def artifactInfo  = getMavenInfo(repoPath)
-								id = artifactInfo.getArtifactId()
+								//Below if condition is added to setup module.name to those modules which don't have a classifier
+								if(artifactInfo.getClassifier()== null)
+									id = artifactInfo.getArtifactId()
+								
 							}
-							if(repoConfig.getPackageType().equalsIgnoreCase("Npm")){
+							else if(repoConfig.getPackageType().equalsIgnoreCase("Npm")){
 								def npmInfo = getNPMInfo(repoPath)
 								id = npmInfo.getName()
 							}
-							if(repoConfig.getPackageType().equalsIgnoreCase("NuGet")){
+							else if(repoConfig.getPackageType().equalsIgnoreCase("NuGet")){
 								def nugetInfo = getNugetInfo(repoPath)
 								id = nugetInfo.getId()
 							}
-							if(repoConfig.getPackageType().equalsIgnoreCase("Composer")){
+							else if(repoConfig.getPackageType().equalsIgnoreCase("Composer")){
 								def composerInfo = getComposerInfo(repoPath)
 								id = composerInfo.getName()
 							}
