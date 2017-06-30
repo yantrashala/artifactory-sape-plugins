@@ -44,7 +44,8 @@ private List getResult(aql) {
 
 			if(!properties.isEmpty()){
 				def moduleName = properties.get("module.name").getAt(0) ?: properties.get("docker.repoName").getAt(0)
-				if(!checkResult.containsKey(moduleName)){
+				def isApproved  = properties.get("module.approved").getAt(0)
+				if(!checkResult.containsKey(moduleName) && (isApproved == null | isApproved.equals("true"))){
 					details = new HashMap()
 					details['name'] =  properties.get("module.name").getAt(0) ?: properties.get("docker.repoName").getAt(0)
 					details['version'] = properties.get("npm.version").getAt(0) ?: properties.get("composer.version").getAt(0) ?: properties.get("module.baseRevision").getAt(0) ?: properties.get("docker.label.version").getAt(0) ?: "NA"
