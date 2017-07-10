@@ -103,9 +103,9 @@ private List getResult(aql) {
 			rpath = RepoPathFactory.create(aqlresult.repo, path)
 	                def properties  = repositories.getProperties(rpath)
 			def moduleNameCheck = properties.get("module.name").getAt(0) ?: properties.get("docker.repoName").getAt(0)
-
+			def isApproved  = properties.get("module.approved").getAt(0)
 			// This condition is added so that repetitive modules can be removed
-			if(!checkResult.containsKey(moduleNameCheck)) {
+			if(!checkResult.containsKey(moduleNameCheck) && (isApproved == null | isApproved.equals("true"))) {
 				result = new HashMap()
 				result['name'] = moduleNameCheck
 				result['version'] = properties.get("npm.version").getAt(0) ?: properties.get("composer.version").getAt(0) ?: properties.get("module.baseRevision").getAt(0) ?: properties.get("docker.label.version").getAt(0) ?: "NA"
