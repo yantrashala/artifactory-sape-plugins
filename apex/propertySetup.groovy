@@ -75,6 +75,7 @@ storage {
 								id = composerInfo.getName()
 							}
 							repositories.setProperty(repoPath, PROPERTY_PREFIX + propName, id as String)
+							repositories.setProperty(repoPath,"module.approved",false as String)
 						}
 						else if(propName.equals(IMAGE))
 							repositories.setProperty(repoPath, PROPERTY_PREFIX + propName, getImagePath(id) as String)
