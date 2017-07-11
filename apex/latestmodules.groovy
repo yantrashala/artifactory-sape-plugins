@@ -11,9 +11,10 @@ executions{
 			// AQL query to get the module details
 			def sub = ['$desc':["created"]]
 			def names = [['@module.name':"*"],['@docker.repoName':"*"]]
+			def isApproved = ['@module.approved':['$eq': "true"]]
 			def query = ['$or': names]
-
-			def aql = "items.find(${new JsonBuilder(query).toString()}).sort(${new JsonBuilder(sub).toString()}).limit(12)"
+			def queryList  = ['$and':[query,isApproved]]
+			def aql = "items.find(${new JsonBuilder(queryList).toString()}).sort(${new JsonBuilder(sub).toString()}).limit(12)"
 			log.info('---------------AQL---------'+aql)
 
 			def list = getResult(aql)
@@ -45,7 +46,7 @@ private List getResult(aql) {
 			if(!properties.isEmpty()){
 				def moduleName = properties.get("module.name").getAt(0) ?: properties.get("docker.repoName").getAt(0)
 				def isApproved  = properties.get("module.approved").getAt(0)
-				if(!checkResult.containsKey(moduleName) && (isApproved == null | isApproved.equals("true"))){
+				if(!checkResult.containsKey(moduleName)){
 					details = new HashMap()
 					details['name'] =  properties.get("module.name").getAt(0) ?: properties.get("docker.repoName").getAt(0)
 					details['version'] = properties.get("npm.version").getAt(0) ?: properties.get("composer.version").getAt(0) ?: properties.get("module.baseRevision").getAt(0) ?: properties.get("docker.label.version").getAt(0) ?: "NA"

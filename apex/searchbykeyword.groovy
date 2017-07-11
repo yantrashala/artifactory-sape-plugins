@@ -14,9 +14,10 @@ executions{
 			def key = keywords.toLowerCase()
 			def names = [ ['@module.name': ['$match': '*'+key +'*']], ['@docker.repoName': ['$match': '*'+key +'*']], ['@docker.label.keywords': ['$match': '*'+key +'*']], ['@docker.label.team': ['$match': '*'+key +'*']] , ['@module.keywords': ['$match': '*'+key +'*']], ['@module.team': ['$match': '*'+key +'*']]]
 			def query = ['$or': names]
-
+			def isApproved = ['@module.approved':['$eq': "true"]]
+			def queryList  = ['$and':[query,isApproved]]
 			def sub = ['$desc':["created"]]
-			def aql = "items.find(${new JsonBuilder(query).toString()})" +
+			def aql = "items.find(${new JsonBuilder(queryList).toString()})" +
 					".include(\"*\").sort(${new JsonBuilder(sub).toString()})"
 
 			def json = [:]
@@ -41,9 +42,10 @@ executions{
 			// AQL query to match the keywords
 			def names = [ ['@module.team': ['$match': keywords.toLowerCase()]], ['@docker.label.team': ['$match': keywords.toLowerCase()]] ]
 			def query = ['$or': names]
-
+			def isApproved = ['@module.approved':['$eq': "true"]]
+			def queryList  = ['$and':[query,isApproved]]
 			def sub = ['$desc':["created"]]
-			def aql = "items.find(${new JsonBuilder(query).toString()})" +
+			def aql = "items.find(${new JsonBuilder(queryList).toString()})" +
 					".include(\"*\").sort(${new JsonBuilder(sub).toString()})"
 
 			def json = [:]
@@ -69,7 +71,9 @@ executions{
 			def names =  [["repo":reponame,'$or':[['@module.name':"*"],['@docker.repoName':"*"]]]]
 			def query = ['$and': names]
 			def sub = ['$desc':["created"]]
-			def aql = "items.find(${new JsonBuilder(query).toString()})" +
+			def isApproved = ['@module.approved':['$eq': "true"]]
+			def queryList  = ['$and':[query,isApproved]]
+			def aql = "items.find(${new JsonBuilder(queryList).toString()})" +
 					".include(\"*\").sort(${new JsonBuilder(sub).toString()})"
 
 			def json = [:]
@@ -103,9 +107,9 @@ private List getResult(aql) {
 			rpath = RepoPathFactory.create(aqlresult.repo, path)
 	                def properties  = repositories.getProperties(rpath)
 			def moduleNameCheck = properties.get("module.name").getAt(0) ?: properties.get("docker.repoName").getAt(0)
-			def isApproved  = properties.get("module.approved").getAt(0)
+
 			// This condition is added so that repetitive modules can be removed
-			if(!checkResult.containsKey(moduleNameCheck) && (isApproved == null | isApproved.equals("true"))) {
+			if(!checkResult.containsKey(moduleNameCheck)) {
 				result = new HashMap()
 				result['name'] = moduleNameCheck
 				result['version'] = properties.get("npm.version").getAt(0) ?: properties.get("composer.version").getAt(0) ?: properties.get("module.baseRevision").getAt(0) ?: properties.get("docker.label.version").getAt(0) ?: "NA"
