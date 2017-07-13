@@ -76,7 +76,8 @@ storage {
 								def composerInfo = getComposerInfo(repoPath)
 								id = composerInfo.getName()
 							}
-							repositories.setProperty(repoPath, PROPERTY_PREFIX + propName, id as String)
+							if(!id.isEmpty())
+								repositories.setProperty(repoPath, PROPERTY_PREFIX + propName, id as String)
 							repositories.setProperty(repoPath,"module.approved",false as String)
 						}
 						else if(propName.equals(IMAGE))
