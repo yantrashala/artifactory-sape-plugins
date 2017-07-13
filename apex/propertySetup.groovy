@@ -60,7 +60,9 @@ storage {
 						if(propName.equals(NAME)){
 							if(currentLayout.isValid()){
 								def artifactInfo  = getMavenInfo(repoPath)
-								id = artifactInfo.getArtifactId()
+								if(!artifactInfo.hasClassifier())
+									id = artifactInfo.getArtifactId()
+								
 							}
 							if(repoConfig.getPackageType().equalsIgnoreCase("Npm")){
 								def npmInfo = getNPMInfo(repoPath)
@@ -259,7 +261,7 @@ public NuMetaData getNugetInfo(RepoPath repoPath){
 	if (uiNuGetAddon != null) {
 		nugetSpecMetaData = uiNuGetAddon.getNutSpecMetaData(repoPath);
 		def id = nugetSpecMetaData.getId()
-		log.debug("Nuget Id : "+id)
+		
 	}
 	return nugetSpecMetaData
 }
