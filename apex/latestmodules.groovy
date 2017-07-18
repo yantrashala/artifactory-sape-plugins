@@ -49,10 +49,10 @@ private List getResult(aql) {
 				if(!checkResult.containsKey(moduleName)){
 					details = new HashMap()
 					details['name'] =  properties.get("module.name").getAt(0) ?: properties.get("docker.repoName").getAt(0)
-					details['version'] = properties.get("npm.version").getAt(0) ?: properties.get("composer.version").getAt(0) ?: properties.get("module.baseRevision").getAt(0) ?: properties.get("docker.label.version").getAt(0) ?: "NA"
+					details['version'] = properties.get("nuget.version").getAt(0) ?:properties.get("npm.version").getAt(0) ?: properties.get("composer.version").getAt(0) ?: properties.get("module.baseRevision").getAt(0) ?: properties.get("docker.label.version").getAt(0) ?: "NA"
 					details['image'] = properties.get("module.image").getAt(0) ?: ""
 					details['team']= properties.get("module.team").getAt(0) ?: properties.get("docker.label.team").getAt(0) ?: ""
-					details['description'] = properties.get("npm.description").getAt(0) ?: properties.get("module.description").getAt(0)  ?: properties.get("composer.description").getAt(0) ?: properties.get("docker.label.description").getAt(0) ?: ""
+					details['description'] = properties.get("nuget.description").getAt(0) ?: properties.get("npm.description").getAt(0) ?: properties.get("module.description").getAt(0)  ?: properties.get("composer.description").getAt(0) ?: properties.get("docker.label.description").getAt(0) ?: ""
 					details['repokey']=var.getRepo()
 					checkResult[moduleName] = details
 					list.add(details)

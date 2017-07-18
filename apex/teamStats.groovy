@@ -55,7 +55,7 @@ executions {
 		A.node_id in (select distinct node_id from public.node_props) and
 		A.prop_key = 'module.team' and
 		B.prop_key = 'module.name' and
-		C.prop_key in ('module.baseRevision', 'npm.version','composer.version','docker.label.version')
+		C.prop_key in ('module.baseRevision', 'npm.version','composer.version','docker.label.version','nuget.version')
 		order by A.prop_value, B.prop_value, C.prop_value
 		""";
 		

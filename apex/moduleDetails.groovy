@@ -26,7 +26,7 @@ executions{
 			// AQL query to get the module details
 			def aql = "items.find({\"\$and\":["+
 						"{\"\$or\":[{\"@module.name\":{\"\$match\":\"$module\"}}, {\"@docker.repoName\":{\"\$match\":\"$module\"}}]},"+
-						"{\"\$or\":[{\"@npm.version\":{\"\$match\":\"$version\"}},{\"@module.baseRevision\":{\"\$match\":\"$version\"}},{\"@composer.version\":{\"\$match\":\"$version\"}},{\"@docker.label.version\":{\"\$match\":\"$version\"}}]}"+
+						"{\"\$or\":[{\"@nuget.version\":{\"\$match\":\"$version\"}},{\"@npm.version\":{\"\$match\":\"$version\"}},{\"@module.baseRevision\":{\"\$match\":\"$version\"}},{\"@composer.version\":{\"\$match\":\"$version\"}},{\"@docker.label.version\":{\"\$match\":\"$version\"}}]}"+
 					  "]}).include(\"*\")"
 			log.info('AQl query for module name and version : '+aql)
 
@@ -62,7 +62,7 @@ private HashMap getModuleDetails(aql) {
 			def downloadCount = getModuleDownloadCount(rpath)
 			
 			details['name'] = moduleName
-			details['version'] = properties.get("npm.version").getAt(0)?: properties.get("composer.version").getAt(0) ?:
+			details['version'] = properties.get("nuget.version").getAt(0)?:  properties.get("npm.version").getAt(0)?: properties.get("composer.version").getAt(0) ?:
 						properties.get("module.baseRevision").getAt(0) ?: properties.get("docker.label.version").getAt(0) ?: "NA"
 			details['image'] = properties.get("module.image").getAt(0) ?: "NA"
 			if(properties.get("module.organization").getAt(0)!= null )
@@ -76,7 +76,7 @@ private HashMap getModuleDetails(aql) {
 			details['keywords']= properties.get("module.keywords").getAt(0) ?: properties.get("docker.label.keywords").getAt(0) ?: "NA"
 			details['team']= properties.get("module.team").getAt(0) ?: properties.get("docker.label.team").getAt(0) ?: ""
 			details['type']= properties.get("module.type").getAt(0) ?: properties.get("docker.label.type").getAt(0) ?: ""
-			details['description'] = properties.get("npm.description").getAt(0) ?: properties.get("module.description").getAt(0) ?: properties.get("composer.description").getAt(0) ?: properties.get("docker.label.description").getAt(0) ?: ""
+			details['description'] = properties.get("nuget.description.description").getAt(0) ?: properties.get("npm.description").getAt(0) ?: properties.get("module.description").getAt(0) ?: properties.get("composer.description").getAt(0) ?: properties.get("docker.label.description").getAt(0) ?: ""
 			details['versionHistory'] = getVersionHistory(moduleName)
 			details['downloadCount'] = downloadCount
 			details['repokey'] = rpath.getRepoKey()
@@ -128,7 +128,7 @@ private List getVersionHistory(module) {
 			def repoProperties  = repositories.getProperties(repositorypath)
 
 			result['name'] = repoProperties.get("module.name").getAt(0) ?: repoProperties.get("docker.repoName").getAt(0) ?: "NA"
-			result['version'] = repoProperties.get("npm.version").getAt(0) ?: repoProperties.get("composer.version").getAt(0) ?:
+			result['version'] = repoProperties.get("nuget.version").getAt(0) ?: repoProperties.get("npm.version").getAt(0) ?: repoProperties.get("composer.version").getAt(0) ?:
 										repoProperties.get("module.baseRevision").getAt(0) ?: repoProperties.get("docker.label.version").getAt(0) ?: "NA"
 			result['lastModifiedOn'] = sortaqlresult.created.getTime()
 			results += result
