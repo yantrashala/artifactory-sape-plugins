@@ -112,11 +112,11 @@ private List getResult(aql) {
 			if(!checkResult.containsKey(moduleNameCheck)) {
 				result = new HashMap()
 				result['name'] = moduleNameCheck
-				result['version'] = properties.get("npm.version").getAt(0) ?: properties.get("composer.version").getAt(0) ?: properties.get("module.baseRevision").getAt(0) ?: properties.get("docker.label.version").getAt(0) ?: "NA"
+				result['version'] = properties.get("nuget.version").getAt(0) ?: properties.get("npm.version").getAt(0) ?: properties.get("composer.version").getAt(0) ?: properties.get("module.baseRevision").getAt(0) ?: properties.get("docker.label.version").getAt(0) ?: "NA"
 				result['image'] = properties.get("module.image").getAt(0) ?: ""
 				result['team'] = properties.get("module.team").getAt(0) ?: properties.get("docker.label.team").getAt(0) ?: ""
 				result['type']= properties.get("module.type").getAt(0) ?: properties.get("docker.label.type").getAt(0) ?: ""
-				result['description'] = properties.get("npm.description").getAt(0) ?: properties.get("module.description").getAt(0) ?: properties.get("composer.description").getAt(0) ?: properties.get("docker.label.description").getAt(0) ?: ""
+				result['description'] = properties.get("nuget.description").getAt(0) ?: properties.get("npm.description").getAt(0) ?: properties.get("module.description").getAt(0) ?: properties.get("composer.description").getAt(0) ?: properties.get("docker.label.description").getAt(0) ?: ""
 
 				checkResult[moduleNameCheck] = result
 				results += result

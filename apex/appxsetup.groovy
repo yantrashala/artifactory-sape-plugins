@@ -115,7 +115,7 @@ private List setImagePath(module, imagePath) {
 			def properties  = repositories.getProperties(rpath)
 
 			def moduleName = properties.get("module.name").getAt(0) ?: properties.get("docker.repoName").getAt(0)
-			def version = properties.get("npm.version").getAt(0)?: properties.get("composer.version").getAt(0) ?:
+			def version = properties.get("nuget.version").getAt(0)?: properties.get("npm.version").getAt(0)?: properties.get("composer.version").getAt(0) ?:
 						properties.get("module.baseRevision").getAt(0) ?: properties.get("docker.label.version").getAt(0) ?: "NA"
 
 			repositories.setProperty(rpath, "module.image", imagePath)
