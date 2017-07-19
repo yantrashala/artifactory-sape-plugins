@@ -18,6 +18,7 @@ import org.artifactory.api.maven.MavenArtifactInfo
 import org.artifactory.api.config.CentralConfigService
 import userdetails
 import propertySetup
+import org.artifactory.mime.MavenNaming
 
 import groovy.transform.Field
 
@@ -40,7 +41,11 @@ storage {
 					def artifactInfo  = propertySetup.getMavenInfo(repoPath)
 					if(!artifactInfo.hasClassifier())
 						moduleName = artifactInfo.getArtifactId()
-					version = artifactInfo.getVersion()
+					if(MavenNaming.isSnapshot(repoPath.getPath())){
+						version = artifactInfo.getVersion().split("-")[0]+MavenNaming.SNAPSHOT_SUFFIX
+					}else{
+						version = artifactInfo.getVersion()
+					}
 				}
 				if(repoConfig.getPackageType().equalsIgnoreCase("Npm")){
 					def npmInfo = propertySetup.getNPMInfo(repoPath)
@@ -58,8 +63,10 @@ storage {
 					version = composerInfo.getVersion()
 				}
 
-				if(!moduleName.isEmpty() && !version.isEmpty())
+				if(!moduleName.isEmpty() && !version.isEmpty()){
 					trySendMail(moduleName,version,currentUserEmail)
+					
+				}
 			}
 		}
 	}
@@ -74,6 +81,7 @@ def trySendMail(String moduleName,String version,String currenUser) {
 		def recipientsList  = findAdminEmails()
 		recipientsList.add(currenUser)
 		String[] recipients  = recipientsList.toArray()
+		log.debug("recipients : "+recipients)
 		mailService.sendMail(recipients, sub, getEmailBody(moduleName, version))
 	} catch (EmailException e) {
 		log.error("Error while sending storage quota mail message.", e)
