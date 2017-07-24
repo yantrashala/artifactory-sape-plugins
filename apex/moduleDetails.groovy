@@ -60,6 +60,14 @@ private HashMap getModuleDetails(aql) {
 			def properties  = repositories.getProperties(rpath)
 			def moduleName = properties.get("module.name").getAt(0) ?: properties.get("docker.repoName").getAt(0)
 			def downloadCount = getModuleDownloadCount(rpath)
+			def moduleType = properties.get("module.distribution").getAt(0) ?:  ""
+			if(!moduleType.equals("") && moduleType.equals("true")){
+				moduleType = "distribution"
+			}else if(!moduleType.equals("") && moduleType.equals("false")) {
+				moduleType = "artifact"
+			}
+				
+			
 			
 			details['name'] = moduleName
 			details['version'] = properties.get("nuget.version").getAt(0)?:  properties.get("npm.version").getAt(0)?: properties.get("composer.version").getAt(0) ?:
@@ -75,7 +83,7 @@ private HashMap getModuleDetails(aql) {
 			details['gatekeepers'] = properties.get("module.gatekeepers").getAt(0) ?: properties.get("docker.label.gatekeepers").getAt(0) ?: ""
 			details['keywords']= properties.get("module.keywords").getAt(0) ?: properties.get("docker.label.keywords").getAt(0) ?: "NA"
 			details['team']= properties.get("module.team").getAt(0) ?: properties.get("docker.label.team").getAt(0) ?: ""
-			details['type']= properties.get("module.type").getAt(0) ?: properties.get("docker.label.type").getAt(0) ?: ""
+			details['type']= moduleType
 			details['description'] = properties.get("nuget.description.description").getAt(0) ?: properties.get("npm.description").getAt(0) ?: properties.get("module.description").getAt(0) ?: properties.get("composer.description").getAt(0) ?: properties.get("docker.label.description").getAt(0) ?: ""
 			details['versionHistory'] = getVersionHistory(moduleName)
 			details['downloadCount'] = downloadCount
