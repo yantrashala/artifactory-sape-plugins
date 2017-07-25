@@ -193,12 +193,7 @@ private void setAppxProperties(str, repoPath, id ) {
 	// Print them out to make sure
 	list.each {
 		if(it.key.equalsIgnoreCase("distribution")){
-			def type
-			if(!it.value)
-				type = 'artifact'
-			else
-				type = 'distribution'
-			repositories.setProperty(repoPath, PROPERTY_PREFIX + "type", type as String)
+			repositories.setProperty(repoPath, PROPERTY_PREFIX + "distribution", it.value as String)
 		} else if(it.key.equalsIgnoreCase("keywords")) {
 			def keywordList = it.value.toLowerCase() + "," + id.toLowerCase()
 			repositories.setProperty(repoPath, PROPERTY_PREFIX + it.key , keywordList as String)
