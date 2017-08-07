@@ -37,6 +37,7 @@ import groovy.transform.Field
 import org.artifactory.addon.sso.ArtifactoryCrowdClient
 import userdetails
 import propertySetup
+import artifactoryutil
 
 @Field JdbcHelper jdbcHelper = ctx.beanForType(JdbcHelper.class)
 @Field InternalRepositoryService repositoryService = ctx.beanForType(InternalRepositoryService.class)
@@ -212,6 +213,7 @@ public void createPermissionForCurrentBuild(ItemInfo item){
 	def repoPath =  item.getRepoPath()
 	def repoKey =  item.getRepoKey()
 	def propertySetup = new propertySetup()
+	def artifactoryutil = new artifactoryutil()
 	if(repoPath.isFile()) {
 		def filePath = repoPath.path.toLowerCase()
 		LocalRepositoryConfiguration repoConfig = repositories.getRepositoryConfiguration(repoPath.repoKey)
@@ -221,19 +223,19 @@ public void createPermissionForCurrentBuild(ItemInfo item){
 			def key = item.repoKey
 			FileLayoutInfo currentLayout = repositories.getLayoutInfo(repoPath)
 			if(currentLayout.isValid()){
-				def artifactInfo  = propertySetup.getMavenInfo(repoPath)
+				def artifactInfo  = artifactoryutil.getMavenInfo(repoPath)
 				artId = artifactInfo.getArtifactId()
 			}
 			if(repoConfig.getPackageType().equalsIgnoreCase("Npm")){
-				def npmInfo = propertySetup.getNPMInfo(repoPath)
+				def npmInfo = artifactoryutil.getNPMInfo(repoPath)
 				artId = npmInfo.getName()
 			}
 			if(repoConfig.getPackageType().equalsIgnoreCase("NuGet")){
-				def nugetInfo = propertySetup.getNugetInfo(repoPath)
+				def nugetInfo = artifactoryutil.getNugetInfo(repoPath)
 				artId = nugetInfo.getId()
 			}
 			if(repoConfig.getPackageType().equalsIgnoreCase("Composer")){
-				def composerInfo = propertySetup.getComposerInfo(repoPath)
+				def composerInfo = artifactoryutil.getComposerInfo(repoPath)
 				artId = composerInfo.getName()
 			}
 			validatePublish(artId)
