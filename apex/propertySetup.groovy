@@ -20,6 +20,7 @@ import org.artifactory.addon.npm.NpmAddon;
 import org.artifactory.addon.npm.NpmInfo
 import org.artifactory.addon.npm.NpmMetadataInfo;
 import org.artifactory.addon.nuget.UiNuGetAddon
+import org.artifactory.mime.MavenNaming
 import org.artifactory.nuget.NuMetaData
 import org.artifactory.aql.AqlService
 import org.artifactory.aql.result.rows.AqlBaseFullRowImpl
@@ -29,6 +30,8 @@ import org.artifactory.addon.composer.ComposerMetadataInfo
 import groovy.json.JsonBuilder
 import groovy.json.JsonSlurper
 import groovy.transform.Field
+import artifactoryutil
+
 
 @Field final String PROPERTY_PREFIX = 'module.'
 @Field final String NAME = 'name'
@@ -38,6 +41,7 @@ import groovy.transform.Field
 @Field final String APEX = 'appx.json'
 @Field final String SNAPSHOT = 'SNAPSHOT'
 @Field final String IMAGEPATH = '/artifactory/assets/images/common/noImage.jpg'
+@Field Map ART_PROPERTIES = [:]
 
 storage {
 	afterCreate { ItemInfo item ->
@@ -47,135 +51,41 @@ storage {
 			RepositoryService repoService = ctx.beanForType(RepositoryService.class);
 			FileLayoutInfo currentLayout = repositories.getLayoutInfo(repoPath)
 			def filePath = item.repoPath.path.toLowerCase()
-
+			def artUtil  = new artifactoryutil()
 			if (ZipUtils.isZipFamilyArchive(filePath) || ZipUtils.isTarArchive(filePath) ||
 			ZipUtils.isTgzFamilyArchive(filePath) || ZipUtils.isGzCompress(filePath)) {
 
 				try  {
-
-					// Setting the properties for the default tokens
-					def id = ""
 					LocalRepositoryConfiguration repoConfig = repositories.getRepositoryConfiguration(repoPath.repoKey)
-					['organization', 'name', 'baseRevision', 'ext', 'image'].each { String propName ->
-						if(propName.equals(NAME)){
-							if(currentLayout.isValid()){
-								def artifactInfo  = getMavenInfo(repoPath)
-								if(!artifactInfo.hasClassifier())
-									id = artifactInfo.getArtifactId()
-								
-							}
-							if(repoConfig.getPackageType().equalsIgnoreCase("Npm")){
-								def npmInfo = getNPMInfo(repoPath)
-								id = npmInfo.getName()
-							}
-							if(repoConfig.getPackageType().equalsIgnoreCase("NuGet")){
-								def nugetInfo = getNugetInfo(repoPath)
-								id = nugetInfo.getId()
-							}
-							if(repoConfig.getPackageType().equalsIgnoreCase("Composer")){
-								def composerInfo = getComposerInfo(repoPath)
-								id = composerInfo.getName()
-							}
-							if(!id.isEmpty())
-								repositories.setProperty(repoPath, PROPERTY_PREFIX + propName, id as String)
-							repositories.setProperty(repoPath,"module.approved",false as String)
-						}
-						else if(propName.equals(IMAGE))
-							repositories.setProperty(repoPath, PROPERTY_PREFIX + propName, getImagePath(id) as String)
-						else if(propName.equals(BASEREVISION))
-							repositories.setProperty(repoPath, PROPERTY_PREFIX + propName, getMavenVersion(currentLayout, propName) as String)
-						else
-							repositories.setProperty(repoPath, PROPERTY_PREFIX + propName, currentLayout."$propName" as String)
-
-					} // This pulls all the default tokens
-
-					// To set description for NPM modules
+					Map artProp = artUtil.getModuleName(repoConfig,repoPath)
+					ART_PROPERTIES.putAll(artProp)
+					ART_PROPERTIES.put("module.approved",false as String)
+					ART_PROPERTIES.put(PROPERTY_PREFIX + "image", getImagePath(ART_PROPERTIES.get("module.name")) as String)
 					if (repoConfig.getPackageType().equalsIgnoreCase("Npm")){
 						setNpmDescription(repoPath)
 					}
-
-					ArchiveInputStream archiveInputStream = repoService.archiveInputStream(item.repoPath)
-					ArchiveEntry archiveEntry;
-
-					// Below two length flags are to get the shortest path for readme and apex file
-					def readmeLength = 0
-					def apexLength = 0
-					while ((archiveEntry = archiveInputStream.getNextEntry()) != null) {
-						if(archiveEntry.name.toLowerCase().endsWith(README)){
-							if(readmeLength == 0 || readmeLength > archiveEntry.name.length()) {
-								readmeLength = archiveEntry.name.length()
-
-								def downloadPath = getDownloadPath(item.repoKey, item.repoPath.path, archiveEntry.name)
-								repositories.setProperty(item.repoPath, PROPERTY_PREFIX + "readme", downloadPath  as String)
-							}
-						}
-						else if(archiveEntry.name.toLowerCase().endsWith(APEX) ) {
-							if(apexLength == 0 || apexLength > archiveEntry.name.length()) {
-								apexLength = archiveEntry.name.length()
-								def downloadPath = getDownloadPath(item.repoKey, item.repoPath.path, archiveEntry.name)
-								repositories.setProperty(item.repoPath, PROPERTY_PREFIX + "appx", downloadPath  as String)
-
-								// Adding properties from apex.json file
-								def str = repoService.getGenericArchiveFileContent(repoPath, archiveEntry.name).getContent()
-								setAppxProperties(str, item.repoPath, id)
-							}
-						} else if(archiveEntry.name.toLowerCase().endsWith("pom.xml")){
-							// To setup description for Maven application
-							def str = repoService.getGenericArchiveFileContent(repoPath, archiveEntry.name).getContent()
-							def pom= new XmlParser().parseText(str)
-							repositories.setProperty(item.repoPath, PROPERTY_PREFIX + "description", pom.description.text() as String)
-						}
-					}
+					setResourcesPath(repoService, item)
 				} catch (IOException e) {
 					log.error("Failed to get  zip Input Stream: " + e.getMessage());
 				}
 			} else if (filePath.endsWith("manifest.json")) {
-				// Adding Image property for dockers manifest.json file by default
-				repositories.setProperty(repoPath, PROPERTY_PREFIX + "image", IMAGEPATH as String)
-				// Setting the module.readme property for dockers.
-				// Setting the readme path same as manifest.json for a docker repository
+				ART_PROPERTIES.put(PROPERTY_PREFIX + "image", IMAGEPATH as String)
 				def readmePath = "dockers/"+ filePath.replaceAll("manifest.json", "readme.md")
-				repositories.setProperty(repoPath, PROPERTY_PREFIX + "readme", readmePath as String)
+				ART_PROPERTIES.put(PROPERTY_PREFIX + "readme", readmePath as String)
+			}
+			if(ART_PROPERTIES.get("module.name")!=""){
+				setArtifactProperties(repositories,repoPath)
 			}
 		}
 	}
-}
-
-private String getModuleName(repoService, repoPath) {
-	def id = ""
-	ArchiveInputStream archiveInputStream1 = repoService.archiveInputStream(repoPath)
-	ArchiveEntry archiveEntry1;
-
-	while((archiveEntry1 = archiveInputStream1.getNextEntry()) != null){
-		if(archiveEntry1.name.toLowerCase().equals("package/package.json")||
-		archiveEntry1.name.toLowerCase().endsWith("composer.json")){
-			def str = repoService.getGenericArchiveFileContent(repoPath, archiveEntry1.name).getContent()
-			def json = new JsonSlurper().parse(str.toCharArray())
-			def list = new JsonSlurper().parseText( str )
-			list.each {
-				if(it.key.equalsIgnoreCase("name")){
-					id = it.value
-				}
-			}
-		}
-	}
-	return id
-}
-
-private String getMavenVersion(currentLayout, propName) {
-	if(currentLayout.folderIntegrationRevision.equals(SNAPSHOT))
-		return currentLayout."$propName" + '-' + SNAPSHOT
-	else
-		return currentLayout."$propName"
 }
 
 private void setNpmDescription(repoPath) {
 	AddonsManager addonsManager = ContextHelper.get().beanForType(AddonsManager.class)
 	NpmAddon npmAddon = addonsManager.addonByType(NpmAddon.class)
 	if (npmAddon != null) {
-		// get npm meta data
 		NpmMetadataInfo npmMetaDataInfo = npmAddon.getNpmMetaDataInfo(repoPath)
-		repositories.setProperty(repoPath, "npm.description", npmMetaDataInfo.getNpmInfo().description as String)
+		ART_PROPERTIES.put("npm.description", npmMetaDataInfo.getNpmInfo().description as String)
 	}
 }
 
@@ -186,28 +96,48 @@ private String getDownloadPath(repoKey, path , name) {
 private void setAppxProperties(str, repoPath, id ) {
 
 	def json = new JsonSlurper().parse(str.toCharArray())
-
 	// Parse the response
 	def list = new JsonSlurper().parseText( str )
-
 	// Print them out to make sure
 	list.each {
 		if(it.key.equalsIgnoreCase("distribution")){
-			def type
-			if(!it.value)
-				type = 'artifact'
-			else
-				type = 'distribution'
-			repositories.setProperty(repoPath, PROPERTY_PREFIX + "type", type as String)
+			ART_PROPERTIES.put(PROPERTY_PREFIX + "distribution", it.value as String)
 		} else if(it.key.equalsIgnoreCase("keywords")) {
 			def keywordList = it.value.toLowerCase() + "," + id.toLowerCase()
-			repositories.setProperty(repoPath, PROPERTY_PREFIX + it.key , keywordList as String)
+			ART_PROPERTIES.put(PROPERTY_PREFIX + it.key , keywordList as String)
 		} else
-			repositories.setProperty(repoPath, PROPERTY_PREFIX + it.key, it.value.toLowerCase() as String)
+			ART_PROPERTIES.put( PROPERTY_PREFIX + it.key, it.value.toLowerCase() as String)
 	}
 }
 
-
+private void setResourcesPath(RepositoryService repoService,ItemInfo item){
+	ArchiveInputStream archiveInputStream = repoService.archiveInputStream(item.getRepoPath())
+	ArchiveEntry archiveEntry;
+	def readmeLength = 0
+	def apexLength = 0
+	while ((archiveEntry = archiveInputStream.getNextEntry()) != null) {
+		if(archiveEntry.name.toLowerCase().endsWith(README)){
+			if(readmeLength == 0 || readmeLength > archiveEntry.name.length()) {
+				readmeLength = archiveEntry.name.length()
+				def downloadPath = getDownloadPath(item.repoKey, item.repoPath.path, archiveEntry.name)
+				ART_PROPERTIES.put(PROPERTY_PREFIX + "readme", downloadPath  as String)
+			}
+		}
+		else if(archiveEntry.name.toLowerCase().endsWith(APEX) ) {
+			if(apexLength == 0 || apexLength > archiveEntry.name.length()) {
+				apexLength = archiveEntry.name.length()
+				def downloadPath = getDownloadPath(item.repoKey, item.repoPath.path, archiveEntry.name)
+				ART_PROPERTIES.put(PROPERTY_PREFIX + "appx", downloadPath  as String)
+				def str = repoService.getGenericArchiveFileContent(item.repoPath, archiveEntry.name).getContent()
+				setAppxProperties(str, item.repoPath, ART_PROPERTIES.get("module.name") as String)
+			}
+		} else if(archiveEntry.name.toLowerCase().endsWith("pom.xml")){
+			def str = repoService.getGenericArchiveFileContent(item.repoPath, archiveEntry.name).getContent()
+			def pom= new XmlParser().parseText(str)
+			ART_PROPERTIES.put( PROPERTY_PREFIX + "description", pom.description.text() as String)
+		}
+	}
+}
 private String getImagePath(id) {
 
 	def names = [ ['@module.name': ['$match': id]], ['@docker.label.team': ['$match': id]] ]
@@ -239,40 +169,9 @@ private String getImagePath(id) {
 		return IMAGEPATH
 }
 
-public MavenArtifactInfo getMavenInfo(RepoPath repoPath){
-	return MavenArtifactInfo.fromRepoPath(repoPath)
-}
-
-public NpmInfo getNPMInfo(RepoPath repoPath){
-	AddonsManager addonsManager = ContextHelper.get().beanForType(AddonsManager.class)
-	NpmAddon npmAddon = addonsManager.addonByType(NpmAddon.class)
-	NpmInfo npmInfo = null
-	if (npmAddon != null) {
-		// get npm meta data
-		NpmMetadataInfo npmMetaDataInfo = npmAddon.getNpmMetaDataInfo(repoPath)
-		npmInfo =  npmMetaDataInfo.getNpmInfo()
+private void setArtifactProperties(Repositories repositories,RepoPath repoPath){
+	for(Map.Entry<String,String> entry : ART_PROPERTIES.entrySet()){
+		repositories.setProperty(repoPath,entry.getKey() as String ,entry.getValue() as String)
 	}
-	return npmInfo
-}
-
-public NuMetaData getNugetInfo(RepoPath repoPath){
-	AddonsManager addonsManager = ContextHelper.get().beanForType(AddonsManager.class);
-	UiNuGetAddon uiNuGetAddon = addonsManager.addonByType(UiNuGetAddon.class)
-	NuMetaData nugetSpecMetaData = null
-	if (uiNuGetAddon != null) {
-		nugetSpecMetaData = uiNuGetAddon.getNutSpecMetaData(repoPath);
-		def id = nugetSpecMetaData.getId()
-		
-	}
-	return nugetSpecMetaData
-}
-public ComposerInfo getComposerInfo(RepoPath repoPath){
-	AddonsManager addonsManager = ContextHelper.get().beanForType(AddonsManager.class)
-	ComposerAddon composerAddon = addonsManager.addonByType(ComposerAddon.class)
-	def composerInfo = null
-	if(composerAddon != null ){
-		ComposerMetadataInfo composerMetadataInfo =  composerAddon.getComposerMetadataInfo(repoPath)
-		composerInfo = composerMetadataInfo.getComposerInfo()
-	}
-	return composerInfo
+	ART_PROPERTIES.clear()
 }
