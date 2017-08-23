@@ -76,9 +76,10 @@ storage {
 								def composerInfo = getComposerInfo(repoPath)
 								id = composerInfo.getName()
 							}
-							if(!id.isEmpty())
+							if(!id.isEmpty()){
 								repositories.setProperty(repoPath, PROPERTY_PREFIX + propName, id as String)
-							repositories.setProperty(repoPath,"module.approved",false as String)
+								repositories.setProperty(repoPath,"module.approved",isApproved(id) as String)
+							}
 						}
 						else if(propName.equals(IMAGE))
 							repositories.setProperty(repoPath, PROPERTY_PREFIX + propName, getImagePath(id) as String)
@@ -275,4 +276,20 @@ public ComposerInfo getComposerInfo(RepoPath repoPath){
 		composerInfo = composerMetadataInfo.getComposerInfo()
 	}
 	return composerInfo
+}
+public boolean isApproved(String moduelName){
+	def names = ['@module.name': ['$match': '*'+moduelName +'*']]
+	def isApproved = ['@module.approved':['$eq': "true"]]
+	def queryList  = ['$and':[names,isApproved]]
+	def aql = "items.find(${new JsonBuilder(queryList).toString()})"
+	def aqlserv = ctx.beanForType(AqlService)
+	def queryresults = []
+	try{
+		queryresults = aqlserv.executeQueryEager(aql).results
+	}catch(e){
+		log.error 'Failed to execute AQL query to find approved modules', e
+		message = 'Failed to execute AQL query to find approved modules'
+		status = 500
+	}
+	return !queryresults.isEmpty()
 }
