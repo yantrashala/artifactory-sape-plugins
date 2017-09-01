@@ -76,6 +76,11 @@ storage {
 								def composerInfo = getComposerInfo(repoPath)
 								id = composerInfo.getName()
 							}
+							else{
+								id = (item.name =~ '^(?:\\D[^.]*\\-)')[0] - ~'\\-$'
+								def version = (item.name =~ '(?:\\d{1,}\\.\\d{1,}\\.\\d{1,})')[-1]
+								repositories.setProperty(repoPath,"module.version",version as String)
+							}
 							if(!id.isEmpty()){
 								repositories.setProperty(repoPath, PROPERTY_PREFIX + propName, id as String)
 								repositories.setProperty(repoPath,"module.approved",isApproved(id) as String)
