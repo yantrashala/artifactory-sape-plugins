@@ -76,7 +76,7 @@ storage {
 								def composerInfo = getComposerInfo(repoPath)
 								id = composerInfo.getName()
 							}
-							else{
+							if(repoConfig.getPackageType().equalsIgnoreCase("Generic")){
 								id = (item.name =~ '^(?:\\D[^.]*\\-)')[0] - ~'\\-$'
 								def version = (item.name =~ '(?:\\d{1,}\\.\\d{1,}\\.\\d{1,})')[-1]
 								repositories.setProperty(repoPath,"module.version",version as String)
