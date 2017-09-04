@@ -63,21 +63,26 @@ storage {
 								if(!artifactInfo.hasClassifier())
 									id = artifactInfo.getArtifactId()
 							}
-							if(repoConfig.getPackageType().equalsIgnoreCase("Npm")){
+							else if(repoConfig.getPackageType().equalsIgnoreCase("Npm")){
 								def npmInfo = getNPMInfo(repoPath)
 								id = npmInfo.getName()
 							}
-							if(repoConfig.getPackageType().equalsIgnoreCase("NuGet")){
+							else if(repoConfig.getPackageType().equalsIgnoreCase("NuGet")){
 								def nugetInfo = getNugetInfo(repoPath)
 								id = nugetInfo.getId()
 							}
-							if(repoConfig.getPackageType().equalsIgnoreCase("Composer")){
+							else if(repoConfig.getPackageType().equalsIgnoreCase("Composer")){
 								def composerInfo = getComposerInfo(repoPath)
 								id = composerInfo.getName()
 							}
+							else if(repoConfig.getPackageType().equalsIgnoreCase("Generic")){
+								id = (item.name =~ '^(?:\\D[^.]*\\-)')[0] - ~'\\-$'
+								def version = (item.name =~ '(?:\\d{1,}\\.\\d{1,}\\.\\d{1,})')[-1]
+								ART_PROPERTIES.put(PROPERTY_PREFIX + "version",version as String)
+							}
 							if(!id.isEmpty()){
-								ART_PROPERTIES.put(PROPERTY_PREFIX + propName, id as String)
-								ART_PROPERTIES.put("module.approved",isApproved(id) as String)
+								ART_PROPERTIES.put(PROPERTY_PREFIX+propName, id as String)
+								ART_PROPERTIES.put(PROPERTY_PREFIX+"approved",isApproved(id) as String)
 							}
 						}
 						else if(propName.equals(IMAGE))
