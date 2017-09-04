@@ -97,7 +97,7 @@ public void importMoudlePermission(){
 	def zip = new ZipFile(new File(FILE_PATH+FILE_NAME+ZIP_EXTENSION))
 	zip.entries().each{
 		if (!it.isDirectory()){
-			def fOut = new File("/etc/opt/jfrog/artifactory/"+ File.separator + it.name)
+			def fOut = new File(FILE_PATH+ File.separator + it.name)
 			new File(fOut.parent).mkdirs()
 			def fos = new FileOutputStream(fOut)
 			def buf = new byte[it.size]
