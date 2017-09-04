@@ -9,9 +9,13 @@ import java.time.LocalDateTime
 import java.util.zip.ZipEntry
 import java.util.zip.ZipFile
 import java.util.zip.ZipOutputStream
+import org.artifactory.util.AlreadyExistsException
 
-@Field JdbcHelper jdbcHelper = ctx.beanForType(JdbcHelper.class)
-
+@Field JdbcHelper JDBC_HELPER = ctx.beanForType(JdbcHelper.class)
+@Field final String FILE_NAME = "Module_Permissions_Backup"
+@Field final String FILE_PATH = "/etc/opt/jfrog/artifactory/"
+@Field final String CSV_EXTENSION = ".csv"
+@Field final String ZIP_EXTENSION = ".zip"
 jobs {
 	backUpModule(cron: "0 0 0/24 * * ?"){ takeBackup() }
 }
@@ -31,8 +35,7 @@ executions{
 	}
 	importmodulepermission(httpMethod: 'POST', groups : 'power_users'){ params ->
 		try{
-			def fileName = params?.get('filename').getAt(0)
-			importMoudlePermission(fileName)
+			importMoudlePermission()
 			def json = [:]
 			json["status"] = "Successfully Imported Module Permissions"
 			message = new JsonBuilder(json).toPrettyString()
@@ -43,26 +46,32 @@ executions{
 			status = 500
 		}
 	}
-	setupdb(httpMethod: 'GET', groups : 'power_users'){ params ->
+	setupdb(httpMethod: 'POST', groups : 'power_users'){ params ->
 
 		try{
-			dropExistingSetup()
+			if(isSetupExisting()){	
+				throw new AlreadyExistsException("Setup for Module permission already Existing")
+			}
 			setupDB()
 			def json = [:]
 			json["status"] = 'Module Permissions setup completed Successfully'
 			message = new JsonBuilder(json).toPrettyString()
 			status = 200
-		}catch(e){
+		}catch(AlreadyExistsException e){
 			log.error 'Failed to execute plugin', e
-			message = 'Failed to execute plugin '+e
+			message = 'Failed to execute plugin : '+e
+			status = 409
+		}
+		catch(Exception e){
+			log.error 'Failed to execute plugin', e
+			message = 'Failed to execute plugin : '+e
 			status = 500
 		}
 	}
 }
 public void takeBackup(){
 	ResultSet resultSet  = getModulePermission()
-	String fileName = "Module_Permissions_"+LocalDateTime.now()+"_Backup"
-	File f = new File("/etc/opt/jfrog/artifactory/"+fileName+".csv")
+	File f = new File(FILE_PATH+FILE_NAME+CSV_EXTENSION)
 	while(resultSet.next()){
 		f.append("\n"+resultSet.getString(1)+";"+resultSet.getString(2)+";"+resultSet.getString(3)+";"+resultSet.getString(4)+";"+resultSet.getString(5))
 	}
@@ -71,8 +80,7 @@ public void takeBackup(){
 }
 
 public void zipfile(File csvFile){
-	String fileName = "Module_Permissions_"+LocalDateTime.now()+"_Backup"
-	ZipOutputStream zipFile = new ZipOutputStream(new FileOutputStream("/etc/opt/jfrog/artifactory/"+fileName+".zip"))
+	ZipOutputStream zipFile = new ZipOutputStream(new FileOutputStream(FILE_PATH+FILE_NAME+ZIP_EXTENSION))
 	if (csvFile.isFile()){
 		zipFile.putNextEntry(new ZipEntry(csvFile.name))
 		def buffer = new byte[csvFile.size()]
@@ -85,8 +93,8 @@ public void zipfile(File csvFile){
 	zipFile.close()
 }
 
-public void importMoudlePermission(String fileName){
-	def zip = new ZipFile(new File("/etc/opt/jfrog/artifactory/"+fileName))
+public void importMoudlePermission(){
+	def zip = new ZipFile(new File(FILE_PATH+FILE_NAME+ZIP_EXTENSION))
 	zip.entries().each{
 		if (!it.isDirectory()){
 			def fOut = new File("/etc/opt/jfrog/artifactory/"+ File.separator + it.name)
@@ -106,7 +114,7 @@ public void importMoudlePermission(String fileName){
 				String author = entry[3]
 				Long timestamp = Long.parseLong(entry[4])
 				createPermission(name,user,author,timestamp)
-				
+
 			}
 			fos.close()
 			fOut.delete()
@@ -115,21 +123,21 @@ public void importMoudlePermission(String fileName){
 	zip.close()
 }
 private ResultSet getModulePermission(){
-	return jdbcHelper.executeSelect("SELECT * from public.module_permissions")
+	return JDBC_HELPER.executeSelect("SELECT * from public.module_permissions")
 }
 
 private void createPermission(String modulename,String user_id,String authorizedBy,Long currentTime){
 
-	jdbcHelper.executeUpdate("INSERT INTO public.module_permissions(module_name, user_id,authorized_by,created)VALUES (?, ?, ?, ?)",
+	JDBC_HELPER.executeUpdate("INSERT INTO public.module_permissions(module_name, user_id,authorized_by,created)VALUES (?, ?, ?, ?)",
 			modulename,user_id,authorizedBy,currentTime)
 
 }
 private void setupDB(){
 
-	jdbcHelper.executeUpdate("CREATE SEQUENCE public.module_permissions_permission_id_seq "+
+	JDBC_HELPER.executeUpdate("CREATE SEQUENCE public.module_permissions_permission_id_seq "+
 			"INCREMENT 1 START 211 MINVALUE 1 MAXVALUE 9223372036854775807 CACHE 1")
 
-	jdbcHelper.executeUpdate("CREATE TABLE public.module_permissions_lat "+
+	JDBC_HELPER.executeUpdate("CREATE TABLE public.module_permissions_lat "+
 			"(permission_id integer NOT NULL DEFAULT nextval('module_permissions_permission_id_seq'::regclass),"+
 			"module_name character varying(2048) COLLATE pg_catalog.default NOT NULL,"+
 			"user_id character varying(64) COLLATE pg_catalog.default NOT NULL,"+
@@ -137,14 +145,31 @@ private void setupDB(){
 			"created bigint NOT NULL,CONSTRAINT module_permissions_pkey PRIMARY KEY (permission_id)"+
 			")WITH (OIDS = FALSE)TABLESPACE pg_default")
 
-	jdbcHelper.executeUpdate("CREATE INDEX module_permissions_module_name_idx "+
+	JDBC_HELPER.executeUpdate("CREATE INDEX module_permissions_module_name_idx "+
 			"ON public.module_permissions USING btree "+
 			"(module_name COLLATE pg_catalog.default) "+
 			"TABLESPACE pg_default")
 
 }
-private void dropExistingSetup(){
-	jdbcHelper.executeUpdate("DROP TABLE IF  EXISTS public.module_permissions");
-	jdbcHelper.executeUpdate("DROP INDEX IF  EXISTS public.module_permissions_module_name_idx");
-	jdbcHelper.executeUpdate("DROP SEQUENCE IF  EXISTS public.module_permissions_permission_id_seq");
+
+private boolean isSetupExisting(){
+	def tableResultSet = JDBC_HELPER.executeSelect("SELECT EXISTS (SELECT 1 FROM   information_schema.tables WHERE table_name = 'module_permissions')");
+	def sequenceResultSet = JDBC_HELPER.executeSelect("SELECT EXISTS (SELECT 1 FROM   information_schema.sequences WHERE sequence_name  = 'module_permissions_permission_id_seq')");
+	def isSetupExisting = false
+	def isTableExisting = "";
+	def isSchemaExisting = "";
+	while(tableResultSet.next()){
+		isTableExisting = tableResultSet.getString(1)
+	}
+	while(sequenceResultSet.next()){
+		isSchemaExisting = sequenceResultSet.getString(1)
+	}
+
+	if(isSchemaExisting.equalsIgnoreCase("t")||  isTableExisting.equalsIgnoreCase("t")){
+		isSetupExisting = true
+	}
+	DbUtils.close(tableResultSet)
+	DbUtils.close(sequenceResultSet)
+	return isSetupExisting
+
 }
