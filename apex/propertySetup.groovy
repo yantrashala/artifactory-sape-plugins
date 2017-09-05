@@ -75,10 +75,12 @@ storage {
 								def composerInfo = getComposerInfo(repoPath)
 								id = composerInfo.getName()
 							}
+
 							else if(repoConfig.getPackageType().equalsIgnoreCase("Generic")){
 								id = (item.name =~ '^(?:\\D[^.]*\\-)')[0] - ~'\\-$'
 								def version = (item.name =~ '(?:\\d{1,}\\.\\d{1,}\\.\\d{1,})')[-1]
 								ART_PROPERTIES.put(PROPERTY_PREFIX + "version",version as String)
+
 							}
 							if(!id.isEmpty()){
 								ART_PROPERTIES.put(PROPERTY_PREFIX+propName, id as String)
