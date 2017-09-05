@@ -38,7 +38,7 @@ import groovy.transform.Field
 @Field final String APEX = 'appx.json'
 @Field final String SNAPSHOT = 'SNAPSHOT'
 @Field final String IMAGEPATH = '/artifactory/assets/images/common/noImage.jpg'
-@Field Map ART_PROPERTIES = [:]
+@Field Map moduleProperties = [:]
 storage {
 	afterCreate { ItemInfo item ->
 
@@ -79,20 +79,20 @@ storage {
 							else if(repoConfig.getPackageType().equalsIgnoreCase("Generic")){
 								id = (item.name =~ '^(?:\\D[^.]*\\-)')[0] - ~'\\-$'
 								def version = (item.name =~ '(?:\\d{1,}\\.\\d{1,}\\.\\d{1,})')[-1]
-								ART_PROPERTIES.put(PROPERTY_PREFIX + "version",version as String)
+								moduleProperties.put(PROPERTY_PREFIX + "version",version as String)
 
 							}
 							if(!id.isEmpty()){
-								ART_PROPERTIES.put(PROPERTY_PREFIX+propName, id as String)
-								ART_PROPERTIES.put(PROPERTY_PREFIX+"approved",isApproved(id) as String)
+								moduleProperties.put(PROPERTY_PREFIX+propName, id as String)
+								moduleProperties.put(PROPERTY_PREFIX+"approved",isApproved(id) as String)
 							}
 						}
 						else if(propName.equals(IMAGE))
-							ART_PROPERTIES.put(PROPERTY_PREFIX + propName, getImagePath(id) as String)
+							moduleProperties.put(PROPERTY_PREFIX + propName, getImagePath(id) as String)
 						else if(propName.equals(BASEREVISION))
-							ART_PROPERTIES.put(PROPERTY_PREFIX + propName, getMavenVersion(currentLayout, propName) as String)
+							moduleProperties.put(PROPERTY_PREFIX + propName, getMavenVersion(currentLayout, propName) as String)
 						else
-							ART_PROPERTIES.put(PROPERTY_PREFIX + propName, currentLayout."$propName" as String)
+							moduleProperties.put(PROPERTY_PREFIX + propName, currentLayout."$propName" as String)
 
 					} // This pulls all the default tokens
 
@@ -113,14 +113,14 @@ storage {
 								readmeLength = archiveEntry.name.length()
 
 								def downloadPath = getDownloadPath(item.repoKey, item.repoPath.path, archiveEntry.name)
-								ART_PROPERTIES.put(PROPERTY_PREFIX + "readme", downloadPath  as String)
+								moduleProperties.put(PROPERTY_PREFIX + "readme", downloadPath  as String)
 							}
 						}
 						else if(archiveEntry.name.toLowerCase().endsWith(APEX) ) {
 							if(apexLength == 0 || apexLength > archiveEntry.name.length()) {
 								apexLength = archiveEntry.name.length()
 								def downloadPath = getDownloadPath(item.repoKey, item.repoPath.path, archiveEntry.name)
-								ART_PROPERTIES.put(PROPERTY_PREFIX + "appx", downloadPath  as String)
+								moduleProperties.put(PROPERTY_PREFIX + "appx", downloadPath  as String)
 
 								// Adding properties from apex.json file
 								def str = repoService.getGenericArchiveFileContent(repoPath, archiveEntry.name).getContent()
@@ -130,8 +130,8 @@ storage {
 							// To setup description for Maven application
 							def str = repoService.getGenericArchiveFileContent(repoPath, archiveEntry.name).getContent()
 							def pom= new XmlParser().parseText(str)
-							ART_PROPERTIES.put(PROPERTY_PREFIX + "description", pom.description.text() as String)
-							ART_PROPERTIES.put(PROPERTY_PREFIX + "scm", pom.scm.url.text() as String)
+							moduleProperties.put(PROPERTY_PREFIX + "description", pom.description.text() as String)
+							moduleProperties.put(PROPERTY_PREFIX + "scm", pom.scm.url.text() as String)
 						}
 					}
 				} catch (IOException e) {
@@ -139,11 +139,11 @@ storage {
 				}
 			} else if (filePath.endsWith("manifest.json")) {
 				// Adding Image property for dockers manifest.json file by default
-				ART_PROPERTIES.put(PROPERTY_PREFIX + "image", IMAGEPATH as String)
+				moduleProperties.put(PROPERTY_PREFIX + "image", IMAGEPATH as String)
 				// Setting the module.readme property for dockers.
 				// Setting the readme path same as manifest.json for a docker repository
 				def readmePath = "dockers/"+ filePath.replaceAll("manifest.json", "readme.md")
-				ART_PROPERTIES.put(PROPERTY_PREFIX + "readme", readmePath as String)
+				moduleProperties.put(PROPERTY_PREFIX + "readme", readmePath as String)
 			}
 			setArtifactProperties(repoPath)
 		}
@@ -184,7 +184,7 @@ private void setNpmDescription(repoPath) {
 	if (npmAddon != null) {
 		// get npm meta data
 		NpmMetadataInfo npmMetaDataInfo = npmAddon.getNpmMetaDataInfo(repoPath)
-		ART_PROPERTIES.put("npm.description", npmMetaDataInfo.getNpmInfo().description as String)
+		moduleProperties.put("npm.description", npmMetaDataInfo.getNpmInfo().description as String)
 	}
 }
 
@@ -207,12 +207,12 @@ private void setAppxProperties(str, repoPath, id ) {
 				type = 'artifact'
 			else
 				type = 'distribution'
-			ART_PROPERTIES.put(PROPERTY_PREFIX + "type", type as String)
+			moduleProperties.put(PROPERTY_PREFIX + "type", type as String)
 		} else if(it.key.equalsIgnoreCase("keywords")) {
 			def keywordList = it.value.toLowerCase() + "," + id.toLowerCase()
-			ART_PROPERTIES.put(PROPERTY_PREFIX + it.key , keywordList as String)
+			moduleProperties.put(PROPERTY_PREFIX + it.key , keywordList as String)
 		} else
-			ART_PROPERTIES.put(PROPERTY_PREFIX + it.key, it.value.toLowerCase() as String)
+			moduleProperties.put(PROPERTY_PREFIX + it.key, it.value.toLowerCase() as String)
 	}
 }
 
@@ -260,7 +260,7 @@ public NpmInfo getNPMInfo(RepoPath repoPath){
 		// get npm meta data
 		NpmMetadataInfo npmMetaDataInfo = npmAddon.getNpmMetaDataInfo(repoPath)
 		npmInfo =  npmMetaDataInfo.getNpmInfo()
-		ART_PROPERTIES.put(PROPERTY_PREFIX + "scm",npmInfo.getRepository() as String)
+		moduleProperties.put(PROPERTY_PREFIX + "scm",npmInfo.getRepository() as String)
 	}
 	return npmInfo
 }
@@ -271,7 +271,7 @@ public NuMetaData getNugetInfo(RepoPath repoPath){
 	NuMetaData nugetSpecMetaData = null
 	if (uiNuGetAddon != null) {
 		nugetSpecMetaData = uiNuGetAddon.getNutSpecMetaData(repoPath);
-		ART_PROPERTIES.put(PROPERTY_PREFIX + "scm",nugetSpecMetaData.getProjectUrl() as String)
+		moduleProperties.put(PROPERTY_PREFIX + "scm",nugetSpecMetaData.getProjectUrl() as String)
 		def id = nugetSpecMetaData.getId()
 		
 	}
@@ -305,10 +305,10 @@ public boolean isApproved(String moduelName){
 }
 
 private void setArtifactProperties(RepoPath repoPath){
-	if(ART_PROPERTIES.get("module.name") != null){
-		for(Map.Entry<String,String> entry : ART_PROPERTIES.entrySet()){
+	if(moduleProperties.get("module.name") != null){
+		for(Map.Entry<String,String> entry : moduleProperties.entrySet()){
 			repositories.setProperty(repoPath,entry.getKey() as String ,entry.getValue() as String)
 		}
 	}
-	ART_PROPERTIES.clear()
+	moduleProperties.clear()
 }
