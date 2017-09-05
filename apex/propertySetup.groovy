@@ -130,6 +130,7 @@ storage {
 							def str = repoService.getGenericArchiveFileContent(repoPath, archiveEntry.name).getContent()
 							def pom= new XmlParser().parseText(str)
 							repositories.setProperty(item.repoPath, PROPERTY_PREFIX + "description", pom.description.text() as String)
+							repositories.setProperty(item.repoPath, PROPERTY_PREFIX + "scm", pom.scm.text() as String)
 						}
 					}
 				} catch (IOException e) {
@@ -257,6 +258,7 @@ public NpmInfo getNPMInfo(RepoPath repoPath){
 		// get npm meta data
 		NpmMetadataInfo npmMetaDataInfo = npmAddon.getNpmMetaDataInfo(repoPath)
 		npmInfo =  npmMetaDataInfo.getNpmInfo()
+		repositories.setProperty(repoPath, PROPERTY_PREFIX + "scm",npmInfo.getRepository() as String)
 	}
 	return npmInfo
 }
@@ -267,6 +269,7 @@ public NuMetaData getNugetInfo(RepoPath repoPath){
 	NuMetaData nugetSpecMetaData = null
 	if (uiNuGetAddon != null) {
 		nugetSpecMetaData = uiNuGetAddon.getNutSpecMetaData(repoPath);
+		repositories.setProperty(repoPath, PROPERTY_PREFIX + "scm",nugetSpecMetaData.getProjectUrl() as String)
 		def id = nugetSpecMetaData.getId()
 		
 	}
