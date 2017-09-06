@@ -9,9 +9,10 @@ import org.sonar.wsclient.services.ResourceQuery
 import groovy.transform.Field
 import searchbykeyword
 
+@Field final String FILE_PATH = ctx.getArtifactoryHome().getEtcDir().toString()+"/"
 @Field final Map COLOR_STATUS = [1:"#4c1",2:"#dfb317",3:"#fe7d37",4:"#e05d44"]
-@Field final File SVG_FILE = new File("/etc/opt/jfrog/artifactory/vectorpaint.svg")
-@Field final File SONAR_FILE = new File("/etc/opt/jfrog/artifactory/appex.properties")
+@Field final File SVG_FILE = new File(FILE_PATH+"vectorpaint.svg")
+@Field final File SONAR_FILE = new File(FILE_PATH+"sonar.properties")
 
 executions{
 
@@ -20,16 +21,14 @@ executions{
 		try{
 			def componentKey =  params?.get('compkey').getAt(0) as String
 			SonarClient client  = getSonarClient()
-			String measures = ""
-			String navigation = ""
-			String quality = ""
-			if(client != null){
-				def coverageParams = ["componentKey":componentKey,"metricKeys":"coverage"]
-				def qualityParams = ["componentKey":componentKey,"metricKeys":"quality_gate_details"]
-				measures = client.get("api/measures/component?", coverageParams)
-				navigation = client.get("api/navigation/component?",coverageParams)
-				quality = client.get("api/measures/component?", qualityParams)
+			if(client == null){
+				throw new NullPointerException("SonarClient cannot be null")
 			}
+			def coverageParams = ["componentKey":componentKey,"metricKeys":"coverage"]
+			def qualityParams = ["componentKey":componentKey,"metricKeys":"quality_gate_details"]
+			def measures = client.get("api/measures/component?", coverageParams)
+			def navigation = client.get("api/navigation/component?",coverageParams)
+			def quality = client.get("api/measures/component?", qualityParams)
 			def measureslist = slurper.parseText(measures).get("component").get("measures")
 			def version = slurper.parseText(navigation).get("version")
 			def qualitylist  = slurper.parseText(quality).get("component").get("measures").get(0).get("value")
@@ -61,14 +60,10 @@ executions{
 			String svgScript = getSvgBody(version,finalres,coveragePercent,colorStatus,colorStatusforQuality)
 			message = svgScript
 			status = 200
-		}catch(NullPointerException e){
-			log.error 'Bad request', e
-			message = 'Bad request'
-			status = 400
 		}
 		catch(e){
-			log.error 'Failed to execute plugin', e
-			message = 'Failed to execute plugin'
+			log.error 'Error', e
+			message = e.getMessage()
 			status = 500
 		}
 	}
