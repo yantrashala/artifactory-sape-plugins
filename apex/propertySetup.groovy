@@ -132,6 +132,7 @@ storage {
 							def pom= new XmlParser().parseText(str)
 							moduleProperties.put(PROPERTY_PREFIX + "description", pom.description.text() as String)
 							moduleProperties.put(PROPERTY_PREFIX + "scm", pom.scm.url.text() as String)
+
 						}
 					}
 				} catch (IOException e) {
