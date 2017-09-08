@@ -7,76 +7,108 @@ import org.sonar.wsclient.SonarClient
 import org.sonar.wsclient.base.HttpException
 import org.sonar.wsclient.services.ResourceQuery
 import groovy.transform.Field
-import searchbykeyword
 
 @Field final String FILE_PATH = ctx.getArtifactoryHome().getEtcDir().toString()+"/"
 @Field final Map COLOR_STATUS = [1:"#4c1",2:"#dfb317",3:"#fe7d37",4:"#e05d44"]
-@Field final File SVG_FILE = new File(FILE_PATH+"vectorpaint.svg")
+@Field final File SVG_FILE = new File(FILE_PATH+"sonarshield.svg")
 @Field final File SONAR_FILE = new File(FILE_PATH+"sonar.properties")
+@Field String SVG_TEXT = null
 
 executions{
 
 	sonar(httpMethod: 'GET', groups : 'users'){ params ->
 		JsonSlurper slurper = new JsonSlurper()
+
+		if(SVG_TEXT == null) {
+			loadsvgfile()
+			if(SVG_TEXT == null) {
+				message = "Error occurred in loading svg"
+				status = 500
+				return
+			}
+		}
+
+		def coverage = "unknown"
+		def quality = "unknown"
+		def version = ""
+
 		try{
 			def componentKey =  params?.get('compkey').getAt(0) as String
 			SonarClient client  = getSonarClient()
 			if(client == null){
-				throw new NullPointerException("SonarClient cannot be null")
+				//throw new NullPointerException("SonarClient cannot be null")
 			}
+
+			// Make client call
 			def coverageParams = ["componentKey":componentKey,"metricKeys":"coverage"]
 			def qualityParams = ["componentKey":componentKey,"metricKeys":"quality_gate_details"]
 			def measures = client.get("api/measures/component?", coverageParams)
 			def navigation = client.get("api/navigation/component?",coverageParams)
-			def quality = client.get("api/measures/component?", qualityParams)
+			def qualityData = client.get("api/measures/component?", qualityParams)
+
+			// Parse response
 			def measureslist = slurper.parseText(measures).get("component").get("measures")
-			def version = slurper.parseText(navigation).get("version")
-			def qualitylist  = slurper.parseText(quality).get("component").get("measures").get(0).get("value")
-			def qualitystatus = slurper.parseText(qualitylist).getAt("level") as String
-			def coveragePercent = measureslist.size()> 0 ?measureslist.get(0).get("value")  : "unknown"
-			def colorStatus = COLOR_STATUS.get(4)
-			if(!coveragePercent.equals("unknown")){
-				coveragePercent = Float.parseFloat(coveragePercent)
-				if(coveragePercent > 80)
-					colorStatus = COLOR_STATUS.get(1)
-				else if(coveragePercent > 60)
-					colorStatus = COLOR_STATUS.get(2)
-				else if(coveragePercent > 40)
-					colorStatus = COLOR_STATUS.get(3)
-				coveragePercent = coveragePercent+"%"
-			}
-			def finalres = ""
-			def colorStatusforQuality= ""
-			if(qualitystatus.equalsIgnoreCase("ERROR")){
-				finalres = "failed"
-				colorStatusforQuality = COLOR_STATUS.get(4)
-			}else if(qualitystatus.equalsIgnoreCase("WARN")){
-				finalres = "warning"
-				colorStatusforQuality = COLOR_STATUS.get(2)
-			}else{
-				finalres = "passed"
-				colorStatusforQuality = COLOR_STATUS.get(1)
-			}
-			String svgScript = getSvgBody(version,finalres,coveragePercent,colorStatus,colorStatusforQuality)
-			message = svgScript
-			status = 200
+			version = slurper.parseText(navigation).get("version")
+			def qualitylist  = slurper.parseText(qualityData).get("component").get("measures").get(0).get("value")
+			quality = slurper.parseText(qualitylist).getAt("level") as String
+			coverage = measureslist.size()> 0 ?measureslist.get(0).get("value")  : "unknown"
+
 		}
 		catch(e){
-			log.error 'Error', e
-			message = e.getMessage()
-			status = 500
+			log.error 'Error in sonar svg', e
 		}
+
+		String svgScript = getSvgBody(version,quality,coverage)
+		message = svgScript
+		status = 200
+
+
 	}
 }
 
-String getSvgBody(String version,String quality,String coverage,
-		String coverageColor,String qualityColor){
-	String message = ""
+private void loadsvgfile() {
+
 	try{
-		message = SVG_FILE.getText()
+		SVG_TEXT = SVG_FILE.getText()
 	}catch(FileNotFoundException e){
+		log.error("Error in getSvgBody:"+e)
 		e.printStackTrace()
 	}
+
+}
+
+private String getSvgBody(String version,String quality,String coverage){
+
+	String message = SVG_TEXT
+
+	// Applying color rules
+	def coverageColor = COLOR_STATUS.get(4)
+	if(!coverage.equals("unknown")){
+		coverage = Float.parseFloat(coverage)
+		if(coverage > 80)
+			coverageColor = COLOR_STATUS.get(1)
+		else if(coverage > 60)
+			coverageColor = COLOR_STATUS.get(2)
+		else if(coverage > 40)
+			coverageColor = COLOR_STATUS.get(3)
+		coverage = coverage+"%"
+	}
+
+	def qualityColor= ""
+	if(quality.equalsIgnoreCase("ERROR")){
+		quality = "failed"
+		qualityColor = COLOR_STATUS.get(4)
+	}else if(quality.equalsIgnoreCase("WARN")){
+		quality = "warning"
+		qualityColor = COLOR_STATUS.get(2)
+	}else if(quality.equalsIgnoreCase("unknown")){
+		quality = "unknown"
+		qualityColor = COLOR_STATUS.get(4)
+	}else{
+		quality = "passed"
+		qualityColor = COLOR_STATUS.get(1)
+	}
+
 	message = message.replaceAll("###Module_Version###", version)
 	message = message.replaceAll("###Quality###", quality)
 	message = message.replaceAll("###Coverage###", coverage)
@@ -84,7 +116,8 @@ String getSvgBody(String version,String quality,String coverage,
 	message = message.replaceAll("###colorStatusforQuality###", qualityColor)
 	return message
 }
-public SonarClient getSonarClient(){
+
+private SonarClient getSonarClient(){
 	SonarClient client = null
 	try{
 		Properties properties = new Properties()
@@ -96,7 +129,7 @@ public SonarClient getSonarClient(){
 				url(sonarurl.trim()).
 				login(token.trim()).password("").build()
 	}catch(HttpException  e){
-		e.printStackTrace()
+		log.error("Error in getSonarClient:"+e)
 	}
 	return client
 }
