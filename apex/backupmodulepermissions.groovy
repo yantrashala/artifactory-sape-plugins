@@ -154,8 +154,8 @@ private boolean isSetupExisting(){
 	def tableResultSet = JDBC_HELPER.executeSelect("SELECT EXISTS (SELECT 1 FROM   information_schema.tables WHERE table_name = 'module_permissions')");
 	def sequenceResultSet = JDBC_HELPER.executeSelect("SELECT EXISTS (SELECT 1 FROM   information_schema.sequences WHERE sequence_name  = 'module_permissions_permission_id_seq')");
 	def isSetupExisting = false
-	def isTableExisting = "";
-	def isSchemaExisting = "";
+	def isTableExisting = false;
+	def isSchemaExisting = false;
 	while(tableResultSet.next()){
 		isTableExisting = tableResultSet.getBoolean(1)
 	}
