@@ -13,14 +13,14 @@ import org.artifactory.util.AlreadyExistsException
 
 @Field JdbcHelper JDBC_HELPER = ctx.beanForType(JdbcHelper.class)
 @Field final String FILE_NAME = "Module_Permissions_Backup"
-@Field final String FILE_PATH = "/etc/opt/jfrog/artifactory/"
+@Field final String FILE_PATH = ctx.getArtifactoryHome().getEtcDir().toString()+"/"
 @Field final String CSV_EXTENSION = ".csv"
 @Field final String ZIP_EXTENSION = ".zip"
 jobs {
 	backUpModule(cron: "0 0 0/24 * * ?"){ takeBackup() }
 }
 executions{
-	backupmodulepermission(httpMethod: 'GET', groups : 'power_users'){ params ->
+	backupmodulepermission(httpMethod: 'GET', users : 'admin'){ params ->
 		try{
 			takeBackup()
 			def json = [:]
@@ -33,7 +33,7 @@ executions{
 			status = 500
 		}
 	}
-	importmodulepermission(httpMethod: 'POST', groups : 'power_users'){ params ->
+	importmodulepermission(httpMethod: 'POST', users : 'admin'){ params ->
 		try{
 			importMoudlePermission()
 			def json = [:]
@@ -46,7 +46,7 @@ executions{
 			status = 500
 		}
 	}
-	setupdb(httpMethod: 'POST', groups : 'power_users'){ params ->
+	setupdb(httpMethod: 'POST', users : 'admin'){ params ->
 
 		try{
 			if(isSetupExisting()){	
@@ -81,14 +81,12 @@ public void takeBackup(){
 
 public void zipfile(File csvFile){
 	ZipOutputStream zipFile = new ZipOutputStream(new FileOutputStream(FILE_PATH+FILE_NAME+ZIP_EXTENSION))
-	if (csvFile.isFile()){
 		zipFile.putNextEntry(new ZipEntry(csvFile.name))
 		def buffer = new byte[csvFile.size()]
 		csvFile.withInputStream {
 			zipFile.write(buffer, 0, it.read(buffer))
 		}
 		zipFile.closeEntry()
-	}
 	csvFile.delete()
 	zipFile.close()
 }
@@ -159,13 +157,13 @@ private boolean isSetupExisting(){
 	def isTableExisting = "";
 	def isSchemaExisting = "";
 	while(tableResultSet.next()){
-		isTableExisting = tableResultSet.getString(1)
+		isTableExisting = tableResultSet.getBoolean(1)
 	}
 	while(sequenceResultSet.next()){
-		isSchemaExisting = sequenceResultSet.getString(1)
+		isSchemaExisting = sequenceResultSet.getBoolean(1)
 	}
 
-	if(isSchemaExisting.equalsIgnoreCase("t")||  isTableExisting.equalsIgnoreCase("t")){
+	if(isSchemaExisting  ||  isTableExisting ){
 		isSetupExisting = true
 	}
 	DbUtils.close(tableResultSet)
