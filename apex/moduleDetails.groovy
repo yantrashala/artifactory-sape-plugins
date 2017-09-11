@@ -16,7 +16,7 @@ import org.artifactory.fs.StatsInfo
 
 executions{
 
-	// API: http://localhost:8081/artifactory/api/plugins/execute/moduledetails?params=usernamesss
+	// API: http://localhost:8081/artifactory/api/plugins/execute/moduledetails?params=username
 	moduledetails(httpMethod: 'GET', groups : 'users'){ params ->
 
 		try {

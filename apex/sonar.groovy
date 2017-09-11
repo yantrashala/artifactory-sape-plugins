@@ -15,7 +15,7 @@ import groovy.transform.Field
 @Field String SVG_TEXT = null
 
 executions{
-	/* /shields/IDEAL-Loopback-models-content/1.0.0/sonar.svg?compkey=sonarComponentKey ,
+	/* /shields/<module_name>/<module_version>/sonar.svg?compkey=<module_key> ,
 	 * executes the closure if the request is from 'users' group
 	 */
 	sonar(httpMethod: 'GET', groups : 'users'){ params ->
