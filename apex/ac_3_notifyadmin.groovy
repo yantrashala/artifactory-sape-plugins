@@ -16,7 +16,6 @@ import org.artifactory.nuget.NuMetaData
 import org.artifactory.addon.npm.NpmInfo
 import org.artifactory.api.maven.MavenArtifactInfo
 import org.artifactory.api.config.CentralConfigService
-import userdetails
 import propertySetup
 import org.artifactory.mime.MavenNaming
 
@@ -65,7 +64,7 @@ storage {
 
 				if(!moduleName.isEmpty() && !version.isEmpty()){
 					trySendMail(moduleName,version,currentUserEmail)
-					
+
 				}
 			}
 		}
@@ -92,7 +91,7 @@ def trySendMail(String moduleName,String version,String currenUser) {
 List findAdminEmails() {
 	UserGroupService userGroupService = ContextHelper.get().beanForType(UserGroupService)
 	userGroupService.findUsersInGroup(POWER_USERS_GROUP).findAll(){ UserInfo userInfo -> userInfo.email }.collect { it.email}
-	
+
 }
 String getEmailBody(String moduleName,String version){
 	String message = ""
@@ -113,8 +112,6 @@ String getArtifactoryUrl(){
 	MailServerDescriptor mailServerDescriptor = descriptor.getMailServer()
 	if(mailServerDescriptor != null)
 		artUrl = mailServerDescriptor.getArtifactoryUrl()
-		
+
 	return artUrl
 }
-
-
