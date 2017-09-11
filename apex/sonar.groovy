@@ -77,7 +77,7 @@ private void loadsvgfile() {
 
 }
 
-private String getSvgBody(String version,String quality,String coverage){
+private String getSvgBody(def version, def quality, def coverage){
 
 	String message = SVG_TEXT
 
@@ -133,3 +133,6 @@ private SonarClient getSonarClient(){
 	}
 	return client
 }
+
+
+
