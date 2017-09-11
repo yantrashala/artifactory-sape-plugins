@@ -15,10 +15,13 @@ import groovy.transform.Field
 @Field String SVG_TEXT = null
 
 executions{
-
+	/* /shields/IDEAL-Loopback-models-content/1.0.0/sonar.svg?compkey=sonarComponentKey ,
+	 * executes the closure if the request is from 'users' group
+	 */
 	sonar(httpMethod: 'GET', groups : 'users'){ params ->
 		JsonSlurper slurper = new JsonSlurper()
 
+		//load svg file if SVG_TEXT is null
 		if(SVG_TEXT == null) {
 			loadsvgfile()
 			if(SVG_TEXT == null) {
@@ -28,6 +31,7 @@ executions{
 			}
 		}
 
+		//setting default value for coverage,quality and version
 		def coverage = "unknown"
 		def quality = "unknown"
 		def version = ""
@@ -35,11 +39,8 @@ executions{
 		try{
 			def componentKey =  params?.get('compkey').getAt(0) as String
 			SonarClient client  = getSonarClient()
-			if(client == null){
-				//throw new NullPointerException("SonarClient cannot be null")
-			}
 
-			// Make client call
+			// sending API requests to Sonar Server
 			def coverageParams = ["componentKey":componentKey,"metricKeys":"coverage"]
 			def qualityParams = ["componentKey":componentKey,"metricKeys":"quality_gate_details"]
 			def measures = client.get("api/measures/component?", coverageParams)
@@ -61,24 +62,20 @@ executions{
 		String svgScript = getSvgBody(version,quality,coverage)
 		message = svgScript
 		status = 200
-
-
 	}
 }
 
 private void loadsvgfile() {
-
+	//Getting SVG_FILE content as text
 	try{
 		SVG_TEXT = SVG_FILE.getText()
 	}catch(FileNotFoundException e){
 		log.error("Error in getSvgBody:"+e)
 		e.printStackTrace()
 	}
-
 }
 
 private String getSvgBody(def version, def quality, def coverage){
-
 	String message = SVG_TEXT
 
 	// Applying color rules
@@ -121,6 +118,7 @@ private SonarClient getSonarClient(){
 	SonarClient client = null
 	try{
 		Properties properties = new Properties()
+		//reading SONAR_FILE properties to get sonar url and login token
 		SONAR_FILE.withInputStream { properties.load(it) }
 		String sonarurl = properties."sonarurl"
 		String token = properties."token"
@@ -133,6 +131,3 @@ private SonarClient getSonarClient(){
 	}
 	return client
 }
-
-
-
