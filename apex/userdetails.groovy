@@ -7,19 +7,31 @@ import com.atlassian.crowd.service.client.CrowdClient
 
 executions{
 
+	/* 
+	 * userdetails plugin is an executable plugin, which retrieves userinfo  by connecting to
+	 * ArtifactoryCrowdClient 
+	 * Parameters:
+	 * username (String) - NT id of the user
+	 * email (String) -  email of the user
+	 */
 	userdetails(httpMethod: 'GET', groups : 'users'){ params ->
 		try {
-
+			//getting username(NT id) or email from httpRequest
 			String username = params?.get('username')?.getAt(0)
 			String email = params?.get('email')?.getAt(0)
 
 			log.debug("username : "+username)
 			log.debug("email : "+email)
-
+			//getting ArtifactoryCrowdClient bean from InternalArtifactoryContext(ctx) 
 			def artifactoryCrowdClient= ctx.beanForType(ArtifactoryCrowdClient.class);
 			if(artifactoryCrowdClient.isCrowdAvailable()) {
 				def crowdClient = artifactoryCrowdClient.getHttpAuthenticator().getClient();
 				def json = [:]
+				
+				/*if username(NT id) is not null then executes getUserInfofromNtId method
+				 * and if email is not null and username is null then executes 
+				 * getUserInfofromEmail method
+				 */
 				if(username != null){
 					json = getUserInfofromNtId(crowdClient,username)
 				} else if(email != null && username == null) {
@@ -41,7 +53,13 @@ executions{
 		}
 	}
 }
-
+/*
+ * retrieves userinfo using NT id
+ * Parameters :
+ * crowClient - CrowdClient Object
+ * ntid - (String) ntid of the user
+ * returns - (Map) userInfo
+ */
 private Map getUserInfofromNtId(CrowdClient crowdClient, String ntid){
 	def userInfo = [:]
 	def userEntity = crowdClient.getUser(ntid);
@@ -51,17 +69,22 @@ private Map getUserInfofromNtId(CrowdClient crowdClient, String ntid){
 
 	return userInfo
 }
-
+/*
+ * retrieves userinfo using email
+ * Parameters :
+ * crowClient - CrowdClient Object
+ * email - (String) email of the user
+ * returns - (Map) userInfo
+ */
 private Map getUserInfofromEmail(CrowdClient crowdClient, String email){
 	def userInfo = [:]
 	def emailProperty = new PropertyImpl("email", String.class)
 	def emailRestriction = Restriction.on(emailProperty).exactlyMatching(email)
 	def usersList = crowdClient.searchUsers(emailRestriction,0,1)
-	if(usersList.size() > 0) {
-		userInfo['displayName'] = usersList.getAt(0).getDisplayName() : email
-		userInfo['emailId'] = usersList.getAt(0).getEmailAddress() : email
-		userInfo['loginID'] = usersList.getAt(0).getName() : email
-	}
+	boolean userListIsEmpty = usersList.isEmpty()
+	userInfo['displayName'] = userListIsEmpty ?  email : usersList.getAt(0).getDisplayName()
+	userInfo['emailId'] = userListIsEmpty ?  email : usersList.getAt(0).getEmailAddress()
+	userInfo['loginID'] = userListIsEmpty ? email : usersList.getAt(0).getName()
 
 	return userInfo
 }
