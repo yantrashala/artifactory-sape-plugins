@@ -49,7 +49,7 @@ executions {
 		
 		status = 200
 		def str = getStats(jdbcHelper, query)
-    	message = new JsonBuilder(str).toPrettyString() 
+		message = new JsonBuilder(str).toPrettyString()
 	}
 	
 	/*
@@ -75,7 +75,7 @@ executions {
 		
 		status = 200
 		def str = getStats(jdbcHelper, query)
-    	message = new JsonBuilder(str).toPrettyString() 
+		message = new JsonBuilder(str).toPrettyString()
 	}
 }
 
@@ -90,24 +90,26 @@ executions {
 	def json = [:]
 	
 	try {
-	    
-	    rs = jdbcHelper.executeSelect(query)
-	    
-	    if(rs) { 
-	    
-	    	ResultSetMetaData metadata = rs.getMetaData()
-	    	def numColumns = metadata.getColumnCount()
-	    	def row = [:]
-	    	
-		    while (rs.next()) {
-		    	for(i=1 ; i <= numColumns ; i++) {
-		    		def column = [:]
-		    		column[metadata.getColumnName(i)] = rs.getObject(i)
-		    		row += column
-		    	}
-		   		results += row
-		    }
-	    }
+
+		//execute query
+		rs = jdbcHelper.executeSelect(query)
+		if(rs) {
+			ResultSetMetaData metadata = rs.getMetaData()
+			def numColumns = metadata.getColumnCount()
+			def row = [:]
+			while (rs.next()) {
+				for(i=1 ; i <= numColumns ; i++) {
+					def column = [:]
+
+					/* setting column name from metadata as key and 
+					 * resultset data as value in row(Map)
+					 */
+					column[metadata.getColumnName(i)] = rs.getObject(i)
+					row += column
+				}
+				results += row
+			}
+		}
 	} catch (ex) {
 		results = []; 
 	} finally {
