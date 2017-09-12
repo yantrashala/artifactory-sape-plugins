@@ -18,7 +18,7 @@ executions{
 	/* /shields/<module_name>/<module_version>/sonar.svg?compkey=<module_key> ,
 	 * executes the closure if the request is from 'users' group
 	 * Parameters:
-	 * module_key (String) - sonar key of the moduel
+	 * module_key  - sonar key of the module
 	 * 
 	 */
 	sonar(httpMethod: 'GET', groups : 'users'){ params ->
