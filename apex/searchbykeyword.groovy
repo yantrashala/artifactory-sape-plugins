@@ -1,6 +1,11 @@
 import groovy.json.JsonBuilder
 import org.artifactory.aql.AqlService
 import org.artifactory.repo.RepoPathFactory
+import org.artifactory.spring.InternalArtifactoryContext
+import org.artifactory.spring.InternalContextHelper
+import org.artifactory.repo.Repositories
+import org.slf4j.LoggerFactory
+import org.slf4j.Logger
 
 executions{
 	
@@ -124,13 +129,21 @@ executions{
  * returns - List of modules which matches the search query
  *
  */
-private List getResult(aql) {
+public List getResult(aql) {
 
+	/*
+	*objects for Logger,InternalArtifactoryContext,Repositories are 
+	*created for the purpose of allowing this method to be called from latestmodules plugin
+	*global variables will not be recongized inside a method if the method is invoked from outside the class
+	*/
+	Logger log = LoggerFactory.getLogger(searchbykeyword.class)
+	InternalArtifactoryContext ctx = InternalContextHelper.get()
+	def repositories = ctx.beanForType(Repositories)
+	
+	def aqlserv = ctx.beanForType(AqlService)
 	def results = []
 	def result = [:]
 	def checkResult = [:]
-	def aqlserv = ctx.beanForType(AqlService)
-
 	try{
 		
 		//executing AQL query
@@ -144,7 +157,7 @@ private List getResult(aql) {
 	                def properties  = repositories.getProperties(rpath)
 			def moduleNameCheck = properties.get("module.name").getAt(0) ?: properties.get("docker.repoName").getAt(0)
 
-			// This condition is added so that repetitive modules can be removed
+			// Below condition will make sure only latest version of the module is added to the result
 			if(!checkResult.containsKey(moduleNameCheck)) {
 				result = new HashMap()
 				result['name'] = moduleNameCheck
@@ -153,7 +166,7 @@ private List getResult(aql) {
 				result['team'] = properties.get("module.team").getAt(0) ?: properties.get("docker.label.team").getAt(0) ?: ""
 				result['type']= properties.get("module.type").getAt(0) ?: properties.get("docker.label.type").getAt(0) ?: ""
 				result['description'] = properties.get("nuget.description").getAt(0) ?: properties.get("npm.description").getAt(0) ?: properties.get("module.description").getAt(0) ?: properties.get("composer.description").getAt(0) ?: properties.get("docker.label.description").getAt(0) ?: ""
-
+				result['repokey'] = aqlresult.getRepo()
 				checkResult[moduleNameCheck] = result
 				results += result
 			}
@@ -162,4 +175,5 @@ private List getResult(aql) {
 		log.error 'Failed to execute the getResult method', e
 	}
 	return results
+
 }
