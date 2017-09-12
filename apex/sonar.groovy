@@ -17,6 +17,9 @@ import groovy.transform.Field
 executions{
 	/* /shields/<module_name>/<module_version>/sonar.svg?compkey=<module_key> ,
 	 * executes the closure if the request is from 'users' group
+	 * Parameters:
+	 * module_key (String) - sonar key of the moduel
+	 * 
 	 */
 	sonar(httpMethod: 'GET', groups : 'users'){ params ->
 		JsonSlurper slurper = new JsonSlurper()
@@ -75,6 +78,15 @@ private void loadsvgfile() {
 	}
 }
 
+/*
+ * 
+ * Parameters :
+ * version - versin of the module
+ * quality - quality of the module
+ * coverage -code coverage of the module
+ * returns - SVG file content as String with updated values
+ * 
+ */
 private String getSvgBody(def version, def quality, def coverage){
 	String message = SVG_TEXT
 
