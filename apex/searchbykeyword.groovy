@@ -3,7 +3,13 @@ import org.artifactory.aql.AqlService
 import org.artifactory.repo.RepoPathFactory
 
 executions{
-	// Search by Keyword execution
+	
+	/* artifactory/api/plugins/execute/searchbykeyword?params=keyword=<key_word> ,
+	 * executes the closure if the request is from 'users' group
+	 * Parameters:
+	 * key_word - String given by the user to search for modules
+	 * 
+	 */
 	searchbykeyword(httpMethod: 'GET', groups : 'users'){ params ->
 
 		try {
@@ -16,7 +22,11 @@ executions{
 			def query = ['$or': names]
 			def isApproved = ['@module.approved':['$eq': "true"]]
 			def queryList  = ['$and':[query,isApproved]]
+			
+			//subquery to sort the modules by created date
 			def sub = ['$desc':["created"]]
+			
+			//constructing  AQL query
 			def aql = "items.find(${new JsonBuilder(queryList).toString()})" +
 					".include(\"*\").sort(${new JsonBuilder(sub).toString()})"
 
@@ -26,13 +36,18 @@ executions{
 			message = new JsonBuilder(json).toPrettyString()
 			status = 200
 		} catch (e) {
-			log.error 'Failed to execute plugin', e
-			message = 'Failed to execute plugin'
+			log.error 'Failed to execute searchbykeyword plugin', e
+			message = 'Failed to execute searchbykeyword plugin'
 			status = 500
 		}
 	}
 
-	// Search by Team execution
+	/*  artifactory/api/plugins/execute/searchbyteam?params=keyword=<team_name> ,
+	 * executes the closure if the request is from 'users' group
+	 * Parameters:
+	 * team_name - Name of the team which deployed modules in AppExchange
+	 *
+	 */
 	searchbyteam(httpMethod: 'GET', groups : 'users'){ params ->
 
 		try {
@@ -44,7 +59,11 @@ executions{
 			def query = ['$or': names]
 			def isApproved = ['@module.approved':['$eq': "true"]]
 			def queryList  = ['$and':[query,isApproved]]
+			
+			//subquery to sort the modules by created date
 			def sub = ['$desc':["created"]]
+			
+			//constructing  AQL query
 			def aql = "items.find(${new JsonBuilder(queryList).toString()})" +
 					".include(\"*\").sort(${new JsonBuilder(sub).toString()})"
 
@@ -55,13 +74,18 @@ executions{
 			status = 200
 
 		} catch (e) {
-			log.error 'Failed to execute plugin', e
-			message = 'Failed to execute plugin'
+			log.error 'Failed to execute searchbyteam plugin', e
+			message = 'Failed to execute searchbyteam plugin'
 			status = 500
 		}
 	}
 
-	// Search by repo execution
+	/*  artifactory/api/plugins/execute/listbyrepo?params=reponame=<repo_name> ,
+	 * executes the closure if the request is from 'users' group
+	 * Parameters:
+	 * repo_name - Name of one of the repo in AppExchange
+	 *
+	 */
 	listbyrepo(httpMethod: 'GET', groups : 'users'){ params ->
 		try{
 			// getting reponame as url parameters
@@ -70,9 +94,13 @@ executions{
 			// AQL query to match the reponame
 			def names =  [["repo":reponame,'$or':[['@module.name':"*"],['@docker.repoName':"*"]]]]
 			def query = ['$and': names]
+			
+			//subquery to sort the modules by created date
 			def sub = ['$desc':["created"]]
 			def isApproved = ['@module.approved':['$eq': "true"]]
 			def queryList  = ['$and':[query,isApproved]]
+			
+			//constructing  AQL query
 			def aql = "items.find(${new JsonBuilder(queryList).toString()})" +
 					".include(\"*\").sort(${new JsonBuilder(sub).toString()})"
 
@@ -82,14 +110,20 @@ executions{
 			message = new JsonBuilder(json).toPrettyString()
 			status = 200
 		} catch (e) {
-			log.error 'Failed to execute plugin', e
-			message = 'Failed to execute plugin'
+			log.error 'Failed to execute listbyrepo plugin', e
+			message = 'Failed to execute listbyrepo plugin'
 			status = 500
 		}
 	}
 }
 
-
+/*
+ *
+ * Parameters :
+ * aql - AQL query 
+ * returns - List of modules which matches the search query
+ *
+ */
 private List getResult(aql) {
 
 	def results = []
@@ -98,10 +132,12 @@ private List getResult(aql) {
 	def aqlserv = ctx.beanForType(AqlService)
 
 	try{
+		
+		//executing AQL query
 		def queryresults = aqlserv.executeQueryEager(aql).results
 		log.info(aql.toString())
 
-		// Looping the Query results to get the list of modules
+		//Looping on Query results to get the list of modules
 		queryresults.each { aqlresult ->
 			path = "$aqlresult.path/$aqlresult.name"
 			rpath = RepoPathFactory.create(aqlresult.repo, path)
@@ -124,8 +160,6 @@ private List getResult(aql) {
 		}
 	} catch (e) {
 		log.error 'Failed to execute the getResult method', e
-		message = 'Failed to execute the getResult method'
-		status = 500
 	}
 	return results
 }
