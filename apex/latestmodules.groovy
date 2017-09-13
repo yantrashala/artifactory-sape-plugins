@@ -5,7 +5,8 @@ import org.artifactory.repo.RepoPathFactory
 import searchbykeyword
 import groovy.transform.Field
 
-@Field final def SEARCH_BY_KEYWORD = new searchbykeyword()
+@Field def SEARCH_BY_KEYWORD = new searchbykeyword()
+
 executions{
 	
 	/* /artifactory/api/plugins/execute/latestmodules ,
