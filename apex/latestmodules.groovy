@@ -3,6 +3,9 @@ import org.artifactory.aql.AqlService
 import org.artifactory.aql.result.rows.AqlBaseFullRowImpl
 import org.artifactory.repo.RepoPathFactory
 import searchbykeyword
+import groovy.transform.Field
+
+@Field final def SEARCH_BY_KEYWORD = new searchbykeyword()
 executions{
 	
 	/* /artifactory/api/plugins/execute/latestmodules ,
@@ -26,7 +29,7 @@ executions{
 			log.info('---------------AQL---------'+aql)
 			
 			//calling getResult method in searchbykeyword plugin
-			def list = new searchbykeyword().getResult(aql)
+			def list = SEARCH_BY_KEYWORD.getResult(aql)
 			message = new JsonBuilder(list).toPrettyString()
 			status = 200
 		} catch (e) {
