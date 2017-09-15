@@ -36,7 +36,7 @@ import groovy.text.markup.AutoNewLineTransformer
 import groovy.transform.Field
 import org.artifactory.addon.sso.ArtifactoryCrowdClient
 import userdetails
-import propertySetup
+import ac_1_propertySetup
 
 @Field JdbcHelper jdbcHelper = ctx.beanForType(JdbcHelper.class)
 @Field InternalRepositoryService repositoryService = ctx.beanForType(InternalRepositoryService.class)
@@ -211,7 +211,7 @@ public int addPublisher(String username,String modulename){
 public void createPermissionForCurrentBuild(ItemInfo item){
 	def repoPath =  item.getRepoPath()
 	def repoKey =  item.getRepoKey()
-	def propertySetup = new propertySetup()
+	def propertySetup = new ac_1_propertySetup()
 	if(repoPath.isFile()) {
 		def filePath = repoPath.path.toLowerCase()
 		LocalRepositoryConfiguration repoConfig = repositories.getRepositoryConfiguration(repoPath.repoKey)

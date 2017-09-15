@@ -16,7 +16,9 @@ import org.artifactory.fs.StatsInfo
 
 executions{
 
-	// API: http://localhost:8081/artifactory/api/plugins/execute/moduledetails?params=username
+	/* /artifactory/api/plugins/execute/moduledetails?params=module=<module_name>,<module_version> ,
+	 * executes the closure if the request is from 'users' group
+	 */
 	moduledetails(httpMethod: 'GET', groups : 'users'){ params ->
 
 		try {
@@ -50,6 +52,13 @@ executions{
 	}
 }
 
+
+/*
+ * Parameters :
+ * aql - AQL query
+ * returns - Map with module details information 
+ *
+ */
 private HashMap getModuleDetails(aql) {
 	def details = [:]
 
@@ -60,7 +69,7 @@ private HashMap getModuleDetails(aql) {
 	def queryresults = aqlserv.executeQueryEager(aql)?.results
 	log.debug("result set size  "+queryresults.size())
 
-	if(!queryresults && queryresults.size() > 0) {
+	if(queryresults && queryresults.size() > 0) {
 		AqlBaseFullRowImpl aqlresult = queryresults.get(0)
 
 		path = "$aqlresult.path/$aqlresult.name"
@@ -115,6 +124,14 @@ private HashMap getModuleDetails(aql) {
 
 	return details
 }
+
+/*
+ * Parameters :
+ * ctx - InternalArtifactoryContext object
+ * repopath - RepoPath object
+ * returns - maven dependency information  of a module
+ *
+ */
 private String getRepoLayout(InternalArtifactoryContext  ctx,RepoPath repopath){
 	String itemPath = repopath.getPath()
 	def repoLayout = null
@@ -124,6 +141,15 @@ private String getRepoLayout(InternalArtifactoryContext  ctx,RepoPath repopath){
 	String mavenDependency = new DependencyDeclaration().getMavenDependencyDeclaration(moduleInfo)
 	return mavenDependency
 }
+
+
+/*
+ *
+ * Parameters :
+ * module - name of a module
+ * returns - list of versions deployed to AppExchange for a given module
+ *
+ */
 private List getVersionHistory(module) {
 	// To get the version history for the given module, so firing a query to get all the versions
 	def moduleNames = [ ['@module.name': ['$match': module]], ['@docker.repoName': ['$match': module]] ]
@@ -155,6 +181,14 @@ private List getVersionHistory(module) {
 	}
 	return results
 }
+
+/*
+ *
+ * Parameters :
+ * repoPath - RepoPath object
+ * returns - numbers of times the module is downloaded from AppExchange
+ *
+ */
 private long getModuleDownloadCount(RepoPath repoPath){
 	long count = 0
 	RepositoryService repoService = ContextHelper.get().beanForType(RepositoryService.class)

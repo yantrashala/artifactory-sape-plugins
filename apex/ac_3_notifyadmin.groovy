@@ -16,7 +16,7 @@ import org.artifactory.nuget.NuMetaData
 import org.artifactory.addon.npm.NpmInfo
 import org.artifactory.api.maven.MavenArtifactInfo
 import org.artifactory.api.config.CentralConfigService
-import propertySetup
+import ac_1_propertySetup
 import org.artifactory.mime.MavenNaming
 
 import groovy.transform.Field
@@ -32,7 +32,7 @@ storage {
 			LocalRepositoryConfiguration repoConfig = repositories.getRepositoryConfiguration(repoPath.repoKey)
 			if (ZipUtils.isZipFamilyArchive(filePath) || ZipUtils.isTarArchive(filePath) ||
 			ZipUtils.isTgzFamilyArchive(filePath) || ZipUtils.isGzCompress(filePath)) {
-				def propertySetup = new propertySetup()
+				def propertySetup = new ac_1_propertySetup()
 				def moduleName = ""
 				def version = ""
 				String currentUserEmail  = security.currentUser().getEmail()
