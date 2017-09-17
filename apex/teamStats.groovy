@@ -4,8 +4,14 @@ import org.artifactory.storage.db.util.JdbcHelper
 import org.artifactory.storage.db.util.DbUtils
 import java.sql.ResultSetMetaData
 
-executions { 
-	teamStats(httpMethod: 'GET', groups : 'users'){ params ->
+executions {
+	
+	/*
+	 * artifactory/api/plugins/execute/teamstats
+	 * executes the closure if the request is from 'users' group
+	 * 
+	 */
+	teamstats(httpMethod: 'GET', groups : 'users'){ params ->
 	 
 		def jdbcHelper = ctx.beanForType(JdbcHelper.class)
 	
@@ -20,10 +26,14 @@ executions {
 		
 		status = 200
 		def str = getStats(jdbcHelper, query)
-    	message = new JsonBuilder(str).toPrettyString() 
+		message = new JsonBuilder(str).toPrettyString()
 	}
 	
-	teamModuleStats(httpMethod: 'GET', groups : 'users'){ params ->
+	/*
+	 * artifactory/api/plugins/execute/teammodulestats
+	 * executes the closure if the request is from 'users' group
+	 */
+	teammodulestats(httpMethod: 'GET', groups : 'users'){ params ->
 	 
 		def jdbcHelper = ctx.beanForType(JdbcHelper.class)
 	
@@ -39,10 +49,14 @@ executions {
 		
 		status = 200
 		def str = getStats(jdbcHelper, query)
-    	message = new JsonBuilder(str).toPrettyString() 
+		message = new JsonBuilder(str).toPrettyString()
 	}
 	
-	teamModuleVersionStats(httpMethod: 'GET', groups : 'users'){ params ->
+	/*
+	 * artifactory/api/plugins/execute/teammoduleversionstats
+	 * executes the closure if the request is from 'users' group
+	 */
+	teammoduleversionstats(httpMethod: 'GET', groups : 'users'){ params ->
 	 
 		def jdbcHelper = ctx.beanForType(JdbcHelper.class)
 	
@@ -61,33 +75,41 @@ executions {
 		
 		status = 200
 		def str = getStats(jdbcHelper, query)
-    	message = new JsonBuilder(str).toPrettyString() 
+		message = new JsonBuilder(str).toPrettyString()
 	}
 }
 
-def getStats(JdbcHelper jdbcHelper, query ) {
+/*
+ * parameters:
+ * jdbcHelper - JdbcHelper object
+ * query - postgresql query
+ * returns - json with team statistics
+ */
+ def getStats(JdbcHelper jdbcHelper, query ) {
 	def  rs = null, results = [];
 	def json = [:]
 	
 	try {
-	    
-	    rs = jdbcHelper.executeSelect(query)
-	    
-	    if(rs) { 
-	    
-	    	ResultSetMetaData metadata = rs.getMetaData()
-	    	def numColumns = metadata.getColumnCount()
-	    	def row = [:]
-	    	
-		    while (rs.next()) {
-		    	for(i=1 ; i <= numColumns ; i++) {
-		    		def column = [:]
-		    		column[metadata.getColumnName(i)] = rs.getObject(i)
-		    		row += column
-		    	}
-		   		results += row
-		    }
-	    }
+
+		//execute query
+		rs = jdbcHelper.executeSelect(query)
+		if(rs) {
+			ResultSetMetaData metadata = rs.getMetaData()
+			def numColumns = metadata.getColumnCount()
+			def row = [:]
+			while (rs.next()) {
+				for(i=1 ; i <= numColumns ; i++) {
+					def column = [:]
+
+					/* setting column name from metadata as key and 
+					 * resultset data as value in row(Map)
+					 */
+					column[metadata.getColumnName(i)] = rs.getObject(i)
+					row += column
+				}
+				results += row
+			}
+		}
 	} catch (ex) {
 		results = []; 
 	} finally {

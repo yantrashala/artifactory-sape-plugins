@@ -16,8 +16,7 @@ import org.artifactory.nuget.NuMetaData
 import org.artifactory.addon.npm.NpmInfo
 import org.artifactory.api.maven.MavenArtifactInfo
 import org.artifactory.api.config.CentralConfigService
-import userdetails
-import propertySetup
+import ac_1_propertySetup
 import org.artifactory.mime.MavenNaming
 
 import groovy.transform.Field
@@ -33,7 +32,7 @@ storage {
 			LocalRepositoryConfiguration repoConfig = repositories.getRepositoryConfiguration(repoPath.repoKey)
 			if (ZipUtils.isZipFamilyArchive(filePath) || ZipUtils.isTarArchive(filePath) ||
 			ZipUtils.isTgzFamilyArchive(filePath) || ZipUtils.isGzCompress(filePath)) {
-				def propertySetup = new propertySetup()
+				def propertySetup = new ac_1_propertySetup()
 				def moduleName = ""
 				def version = ""
 				String currentUserEmail  = security.currentUser().getEmail()
@@ -65,7 +64,7 @@ storage {
 
 				if(!moduleName.isEmpty() && !version.isEmpty()){
 					trySendMail(moduleName,version,currentUserEmail)
-					
+
 				}
 			}
 		}
@@ -92,7 +91,7 @@ def trySendMail(String moduleName,String version,String currenUser) {
 List findAdminEmails() {
 	UserGroupService userGroupService = ContextHelper.get().beanForType(UserGroupService)
 	userGroupService.findUsersInGroup(POWER_USERS_GROUP).findAll(){ UserInfo userInfo -> userInfo.email }.collect { it.email}
-	
+
 }
 String getEmailBody(String moduleName,String version){
 	String message = ""
@@ -113,8 +112,6 @@ String getArtifactoryUrl(){
 	MailServerDescriptor mailServerDescriptor = descriptor.getMailServer()
 	if(mailServerDescriptor != null)
 		artUrl = mailServerDescriptor.getArtifactoryUrl()
-		
+
 	return artUrl
 }
-
-
