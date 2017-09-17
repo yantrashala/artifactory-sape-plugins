@@ -220,21 +220,24 @@ public void createPermissionForCurrentBuild(ItemInfo item){
 			String artId = ""
 			def key = item.repoKey
 			FileLayoutInfo currentLayout = repositories.getLayoutInfo(repoPath)
-			if(currentLayout.isValid()){
+			if(repoConfig.getPackageType().equalsIgnoreCase("Maven")){
 				def artifactInfo  = propertySetup.getMavenInfo(repoPath)
 				artId = artifactInfo.getArtifactId()
 			}
-			if(repoConfig.getPackageType().equalsIgnoreCase("Npm")){
+			else if(repoConfig.getPackageType().equalsIgnoreCase("Npm")){
 				def npmInfo = propertySetup.getNPMInfo(repoPath)
 				artId = npmInfo.getName()
 			}
-			if(repoConfig.getPackageType().equalsIgnoreCase("NuGet")){
+			else if(repoConfig.getPackageType().equalsIgnoreCase("NuGet")){
 				def nugetInfo = propertySetup.getNugetInfo(repoPath)
 				artId = nugetInfo.getId()
 			}
-			if(repoConfig.getPackageType().equalsIgnoreCase("Composer")){
+			else if(repoConfig.getPackageType().equalsIgnoreCase("Composer")){
 				def composerInfo = propertySetup.getComposerInfo(repoPath)
 				artId = composerInfo.getName()
+			}
+			else if(repoConfig.getPackageType().equalsIgnoreCase("Generic")){
+				artId = (item.name =~ '^(?:\\D[^.]*\\-)')[0] - ~'\\-$'
 			}
 			validatePublish(artId)
 		}
