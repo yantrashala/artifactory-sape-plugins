@@ -36,7 +36,7 @@ storage {
 				def moduleName = ""
 				def version = ""
 				String currentUserEmail  = security.currentUser().getEmail()
-				if(currentLayout.isValid()){
+				if(repoConfig.getPackageType().equalsIgnoreCase("Maven")){
 					def artifactInfo  = propertySetup.getMavenInfo(repoPath)
 					if(!artifactInfo.hasClassifier())
 						moduleName = artifactInfo.getArtifactId()
@@ -46,21 +46,26 @@ storage {
 						version = artifactInfo.getVersion()
 					}
 				}
-				if(repoConfig.getPackageType().equalsIgnoreCase("Npm")){
+				else if(repoConfig.getPackageType().equalsIgnoreCase("Npm")){
 					def npmInfo = propertySetup.getNPMInfo(repoPath)
 					moduleName = npmInfo.getName()
 					version = npmInfo.getVersion()
 				}
-				if(repoConfig.getPackageType().equalsIgnoreCase("NuGet")){
+				else if(repoConfig.getPackageType().equalsIgnoreCase("NuGet")){
 					def nugetInfo = propertySetup.getNugetInfo(repoPath)
 					moduleName = nugetInfo.getId()
 					version = nugetInfo.getVersion()
 				}
-				if(repoConfig.getPackageType().equalsIgnoreCase("Composer")){
+				else if(repoConfig.getPackageType().equalsIgnoreCase("Composer")){
 					def composerInfo = propertySetup.getComposerInfo(repoPath)
 					moduleName = composerInfo.getName()
 					version = composerInfo.getVersion()
 				}
+				else if(repoConfig.getPackageType().equalsIgnoreCase("Generic")){
+					moduleName = (item.name =~ '^(?:\\D[^.]*\\-)')[0] - ~'\\-$'
+					version = (item.name =~ '(?:\\d{1,}\\.\\d{1,}\\.\\d{1,})')[-1]
+				}
+
 
 				if(!moduleName.isEmpty() && !version.isEmpty()){
 					trySendMail(moduleName,version,currentUserEmail)
