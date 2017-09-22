@@ -78,7 +78,7 @@ storage {
 							else if(repoConfig.getPackageType().equalsIgnoreCase("Generic")){
 								id = (item.name =~ '^(?:\\D[^.]*\\-)')[0] - ~'\\-$'
 								def version = (item.name =~ '(?:\\d{1,}\\.\\d{1,}\\.\\d{1,})')[-1]
-								moduleProperties.put(PROPERTY_PREFIX + "version",version as String)
+								moduleProperties.put(PROPERTY_PREFIX+BASEREVISION,version as String)
 							}
 							if(!id.isEmpty()){
 								moduleProperties.put(PROPERTY_PREFIX+propName, id as String)
@@ -87,8 +87,10 @@ storage {
 						}
 						else if(propName.equals(IMAGE))
 							moduleProperties.put(PROPERTY_PREFIX + propName, getImagePath(id) as String)
-						else if(propName.equals(BASEREVISION))
-							moduleProperties.put(PROPERTY_PREFIX + propName, getMavenVersion(currentLayout, propName) as String)
+						else if(propName.equals(BASEREVISION)){
+							if(!moduleProperties.containsKey(PROPERTY_PREFIX+BASEREVISION))
+								moduleProperties.put(PROPERTY_PREFIX + propName, getMavenVersion(currentLayout, propName) as String)
+						}
 						else
 							moduleProperties.put(PROPERTY_PREFIX + propName, currentLayout."$propName" as String)
 
