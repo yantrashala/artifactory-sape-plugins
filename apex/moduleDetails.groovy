@@ -97,6 +97,8 @@ private HashMap getModuleDetails(aql) {
 			details['organization'] = properties.get("module.organization").getAt(0)
 		if(properties.get("module.scm").getAt(0)!=null)
 			details['scm'] = properties.get("module.scm").getAt(0)
+		if(properties.get("module.sonarkey").getAt(0)!=null)
+			details['sonarkey'] = properties.get("module.sonarkey").getAt(0)
 		details['publisher'] = aqlresult.getModifiedBy()
 		details['lastModifiedOn'] = aqlresult.created.getTime()
 		details['license'] = properties.get("artifactory.licenses").getAt(0) ?: ""
