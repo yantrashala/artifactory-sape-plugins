@@ -149,7 +149,7 @@ private String getRepoLayout(InternalArtifactoryContext  ctx,RepoPath repopath){
  *
  * Parameters :
  * module - name of a module
- * returns - list of versions deployed to AppExchange for a given module
+ * returns - list of versions deployed to CodeCommonsApex for a given module
  *
  */
 private List getVersionHistory(module) {
@@ -188,7 +188,7 @@ private List getVersionHistory(module) {
  *
  * Parameters :
  * repoPath - RepoPath object
- * returns - numbers of times the module is downloaded from AppExchange
+ * returns - numbers of times the module is downloaded from CodeCommonsApex
  *
  */
 private long getModuleDownloadCount(RepoPath repoPath){

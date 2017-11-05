@@ -31,9 +31,9 @@ executions{
 				if(mList.size() > 0)
 					json['message'] = "Image property copied successfully for module(s) : "+mList
 				else
-					json['message'] = "No module(s) available in appExchange : "+module.replaceAll('\\$',',')
+					json['message'] = "No module(s) available in CodeCommonsApex : "+module.replaceAll('\\$',',')
 			} else {
-				json['message'] = "Base Module not available in appExchange : "+baseModule
+				json['message'] = "Base Module not available in CodeCommonsApex : "+baseModule
 			}
 			message = new JsonBuilder(json).toPrettyString()
 		}catch (e) {
@@ -57,7 +57,7 @@ executions{
 			if(list.size() > 0)
 				json['message'] = "Image setup successfully for module : "+list
 			else
-				json['message'] = "No module(s) available in appExchange : "+module.replaceAll('\\$',',')
+				json['message'] = "No module(s) available in CodeCommonsApex : "+module.replaceAll('\\$',',')
 			message = new JsonBuilder(json).toPrettyString()
 		}catch (e) {
 			log.error 'Failed to execute imagePropertySetup plugin', e

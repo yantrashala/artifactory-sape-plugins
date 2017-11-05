@@ -50,7 +50,7 @@ executions{
 	/*  artifactory/api/plugins/execute/searchbyteam?params=keyword=<team_name> ,
 	 * executes the closure if the request is from 'users' group
 	 * Parameters:
-	 * team_name - Name of the team which deployed modules in AppExchange
+	 * team_name - Name of the team which deployed modules in CodeCommonsApex
 	 *
 	 */
 	searchbyteam(httpMethod: 'GET', groups : 'users'){ params ->
@@ -88,7 +88,7 @@ executions{
 	/*  artifactory/api/plugins/execute/listbyrepo?params=reponame=<repo_name> ,
 	 * executes the closure if the request is from 'users' group
 	 * Parameters:
-	 * repo_name - Name of one of the repo in AppExchange
+	 * repo_name - Name of one of the repo in CodeCommonsApex
 	 *
 	 */
 	listbyrepo(httpMethod: 'GET', groups : 'users'){ params ->
